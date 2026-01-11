@@ -17,6 +17,13 @@ export interface AgentConfig {
   disallowedTools?: string[];
   model?: AgentModel; // Model to use, defaults to "inherit"
   systemPrompt: string;
+  // === SA extension fields ===
+  /** Whether this agent maintains state across invocations */
+  persistent?: boolean;
+  /** Whether this agent runs background services (e.g., daemons) */
+  hasBackgroundServices?: boolean;
+  /** Whether this agent requires initialization before use */
+  requiresInit?: boolean;
 }
 
 /**
