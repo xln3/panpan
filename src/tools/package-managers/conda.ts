@@ -1,5 +1,5 @@
 /**
- * Conda tool - Conda environment and package management
+ * Conda tool - Conda environment and package management with automatic retry and mirror switching
  */
 
 import { z } from "zod";
@@ -10,6 +10,10 @@ import {
   formatResultForAssistant,
   TIMEOUTS,
 } from "./common.ts";
+import {
+  executeWithDiagnostics,
+  type DiagnosticResult,
+} from "./diagnostic-executor.ts";
 
 const condaOperations = z.enum([
   "create",
@@ -51,6 +55,10 @@ type Input = z.infer<typeof inputSchema>;
 
 interface Output extends CommandResult {
   operation: string;
+  /** Number of attempts (only for write operations) */
+  attempts?: number;
+  /** Applied fix IDs (only for write operations) */
+  appliedFixes?: string[];
 }
 
 function getTimeout(operation: string): number {
@@ -161,20 +169,20 @@ function buildCommand(input: Input): string[] {
 
 export const CondaTool: Tool<typeof inputSchema, Output> = {
   name: "Conda",
-  description: `Conda environment and package manager.
+  description: `Conda environment and package manager with automatic retry and mirror switching.
 
 Operations:
-- create: Create new environment (env_name, python_version, packages, channels, or environment_file)
+- create: Create new environment (auto-retries with mirrors on timeout)
 - install: Install packages into existing environment
 - remove: Remove packages from environment
 - list: List installed packages in environment
 - info: Show conda information
 - env_list: List all conda environments
 
-Use for: ML projects needing conda-specific packages (PyTorch with CUDA, etc.),
-projects with environment.yml files, or when specific conda channels are required.
-
-Timeouts: create/install allow up to 15 minutes for large ML packages.`,
+Features:
+- Automatic timeout detection and mirror switching
+- Supports Tsinghua, Aliyun mirrors
+- Detailed diagnostics on failure`,
 
   inputSchema,
 
@@ -195,53 +203,106 @@ Timeouts: create/install allow up to 15 minutes for large ML packages.`,
     const timeout = getTimeout(input.operation);
     const cmd = buildCommand(input);
 
-    // Start output display for long operations
-    const needsStreaming = ["create", "install", "remove"].includes(input.operation);
-    if (needsStreaming && context.outputDisplay) {
-      const label = `conda ${input.operation}`;
-      context.outputDisplay.start(label, timeout);
+    // Read-only operations don't need diagnostic enhancement
+    const isReadOnly = ["list", "info", "env_list"].includes(input.operation);
+
+    if (isReadOnly) {
+      // Use simple streaming execution for read operations
+      let result: CommandResult | undefined;
+      for await (const item of executeCommandStreaming(
+        cmd,
+        context.cwd,
+        timeout,
+        context.abortController,
+      )) {
+        if ("stream" in item) {
+          yield { type: "streaming_output", line: item };
+        } else {
+          result = item;
+        }
+      }
+
+      const output: Output = {
+        operation: input.operation,
+        ...(result || {
+          stdout: "",
+          stderr: "",
+          exitCode: -1,
+          durationMs: 0,
+          timedOut: false,
+        }),
+      };
+
+      yield {
+        type: "result",
+        data: output,
+        resultForAssistant: this.renderResultForAssistant(output),
+      };
+      return;
     }
 
-    // Use streaming execution
-    let result: CommandResult | undefined;
-    for await (const item of executeCommandStreaming(
+    // ========== Write operations: use diagnostic executor ==========
+    if (context.outputDisplay) {
+      context.outputDisplay.start(`conda ${input.operation}`, timeout);
+    }
+
+    let result: DiagnosticResult | undefined;
+
+    for await (const item of executeWithDiagnostics(
       cmd,
       context.cwd,
       timeout,
       context.abortController,
+      { tool: "conda", maxAttempts: 3 },
     )) {
       if ("stream" in item) {
         yield { type: "streaming_output", line: item };
+      } else if ("type" in item && item.type === "progress") {
+        yield { type: "progress", content: item.message };
       } else {
-        result = item;
+        result = item as DiagnosticResult;
       }
     }
 
-    // Stop output display
-    if (needsStreaming && context.outputDisplay) {
+    if (context.outputDisplay) {
       context.outputDisplay.stop();
     }
 
+    // Build output
     const output: Output = {
       operation: input.operation,
-      ...(result || {
-        stdout: "",
-        stderr: "",
-        exitCode: -1,
-        durationMs: 0,
-        timedOut: false,
-      }),
+      stdout: result?.stdout || "",
+      stderr: result?.stderr || "",
+      exitCode: result?.exitCode ?? -1,
+      durationMs: result?.durationMs || 0,
+      timedOut: result?.timedOut || false,
+      attempts: result?.attempts,
+      appliedFixes: result?.appliedFixes,
     };
+
+    // Build assistant message with diagnostic info
+    let assistantMessage = this.renderResultForAssistant(output);
+    if (result?.diagnosis?.userQuestion) {
+      assistantMessage += `\n\n⚠️ ${result.diagnosis.userQuestion}`;
+    }
 
     yield {
       type: "result",
       data: output,
-      resultForAssistant: this.renderResultForAssistant(output),
+      resultForAssistant: assistantMessage,
     };
   },
 
   renderResultForAssistant(output: Output): string {
-    return formatResultForAssistant(output, `conda ${output.operation}`);
+    let result = formatResultForAssistant(output, `conda ${output.operation}`);
+    if (output.attempts && output.attempts > 1) {
+      result += `\n(共尝试 ${output.attempts} 次`;
+      if (output.appliedFixes?.length) {
+        result += `, 已应用修复: ${output.appliedFixes.join(", ")}`;
+      }
+      result += ")";
+    }
+    return result;
   },
 
   renderToolUseMessage(input: Input, { verbose }) {

@@ -1,5 +1,5 @@
 /**
- * Uv tool - Fast Python package manager
+ * Uv tool - Fast Python package manager with automatic retry and mirror switching
  */
 
 import { z } from "zod";
@@ -10,6 +10,10 @@ import {
   formatResultForAssistant,
   TIMEOUTS,
 } from "./common.ts";
+import {
+  executeWithDiagnostics,
+  type DiagnosticResult,
+} from "./diagnostic-executor.ts";
 import { join, isAbsolute, basename } from "@std/path";
 
 /**
@@ -151,6 +155,10 @@ type Input = z.infer<typeof inputSchema>;
 
 interface Output extends CommandResult {
   operation: string;
+  /** Number of attempts (only for write operations) */
+  attempts?: number;
+  /** Applied fix IDs (only for write operations) */
+  appliedFixes?: string[];
 }
 
 function getTimeout(operation: string, pipCommand?: string): number {
@@ -235,10 +243,10 @@ function buildCommand(input: Input): string[] {
 
 export const UvTool: Tool<typeof inputSchema, Output> = {
   name: "Uv",
-  description: `Fast Python package manager (replacement for pip/pip-tools/virtualenv).
+  description: `Fast Python package manager with automatic retry and mirror switching.
 
 Operations:
-- add: Add dependencies to project (packages, dev)
+- add: Add dependencies to project (auto-retries with mirrors on timeout)
 - remove: Remove dependencies from project
 - sync: Sync environment with lockfile
 - lock: Update lockfile without syncing
@@ -246,11 +254,12 @@ Operations:
 - run: Run command in project environment
 - venv: Create virtual environment (python_version, path defaults to .venv)
 
-IMPORTANT for venv: Inside Python projects, use .venv (default) to avoid import shadowing.
-Creating a venv with a custom name inside a project that has a source package with the same name will be BLOCKED.
+Features:
+- Automatic timeout detection and mirror switching
+- Supports Tsinghua, Aliyun, USTC mirrors
+- Detailed diagnostics on failure
 
-Use for: Modern Python projects, fast installs, reproducible environments.
-Timeouts: add/sync allow up to 15 minutes for large packages.`,
+IMPORTANT for venv: Inside Python projects, use .venv (default) to avoid import shadowing.`,
 
   inputSchema,
 
@@ -306,62 +315,114 @@ Timeouts: add/sync allow up to 15 minutes for large packages.`,
       venvWarning = validation.warning;
     }
 
-    // Start output display for long operations
-    const needsStreaming = ["add", "sync", "pip"].includes(input.operation) &&
-      (input.operation !== "pip" || input.pip_command === "install");
-    if (needsStreaming && context.outputDisplay) {
+    // Determine if this is a read-only operation
+    const isReadOnly =
+      input.operation === "run" ||
+      (input.operation === "pip" && ["list", "freeze"].includes(input.pip_command || ""));
+
+    if (isReadOnly) {
+      // Use simple streaming execution for read operations
+      let result: CommandResult | undefined;
+      for await (const item of executeCommandStreaming(
+        cmd,
+        cwd,
+        timeout,
+        context.abortController,
+      )) {
+        if ("stream" in item) {
+          yield { type: "streaming_output", line: item };
+        } else {
+          result = item;
+        }
+      }
+
+      const output: Output = {
+        operation: input.operation,
+        ...(result || {
+          stdout: "",
+          stderr: "",
+          exitCode: -1,
+          durationMs: 0,
+          timedOut: false,
+        }),
+      };
+
+      yield {
+        type: "result",
+        data: output,
+        resultForAssistant: this.renderResultForAssistant(output),
+      };
+      return;
+    }
+
+    // ========== Write operations: use diagnostic executor ==========
+    if (context.outputDisplay) {
       const label = input.operation === "pip"
         ? `uv pip ${input.pip_command}`
         : `uv ${input.operation}`;
       context.outputDisplay.start(label, timeout);
     }
 
-    // Use streaming execution
-    let result: CommandResult | undefined;
-    for await (const item of executeCommandStreaming(
+    let result: DiagnosticResult | undefined;
+
+    for await (const item of executeWithDiagnostics(
       cmd,
       cwd,
       timeout,
       context.abortController,
+      { tool: "uv", maxAttempts: 3 },
     )) {
       if ("stream" in item) {
         yield { type: "streaming_output", line: item };
+      } else if ("type" in item && item.type === "progress") {
+        yield { type: "progress", content: item.message };
       } else {
-        result = item;
+        result = item as DiagnosticResult;
       }
     }
 
-    // Stop output display
-    if (needsStreaming && context.outputDisplay) {
+    if (context.outputDisplay) {
       context.outputDisplay.stop();
     }
 
+    // Build output
     const output: Output = {
       operation: input.operation,
-      ...(result || {
-        stdout: "",
-        stderr: "",
-        exitCode: -1,
-        durationMs: 0,
-        timedOut: false,
-      }),
+      stdout: result?.stdout || "",
+      stderr: result?.stderr || "",
+      exitCode: result?.exitCode ?? -1,
+      durationMs: result?.durationMs || 0,
+      timedOut: result?.timedOut || false,
+      attempts: result?.attempts,
+      appliedFixes: result?.appliedFixes,
     };
 
-    // Include venv warning in result if present
-    let resultText = this.renderResultForAssistant(output);
+    // Build assistant message with diagnostic info and venv warning
+    let assistantMessage = this.renderResultForAssistant(output);
     if (venvWarning) {
-      resultText = `WARNING: ${venvWarning}\n\n${resultText}`;
+      assistantMessage = `WARNING: ${venvWarning}\n\n${assistantMessage}`;
+    }
+    if (result?.diagnosis?.userQuestion) {
+      assistantMessage += `\n\n⚠️ ${result.diagnosis.userQuestion}`;
     }
 
     yield {
       type: "result",
       data: output,
-      resultForAssistant: resultText,
+      resultForAssistant: assistantMessage,
     };
   },
 
   renderResultForAssistant(output: Output): string {
-    return formatResultForAssistant(output, `uv ${output.operation}`);
+    let result = formatResultForAssistant(output, `uv ${output.operation}`);
+    if (output.attempts && output.attempts > 1) {
+      result += `\n(共尝试 ${output.attempts} 次`;
+      if (output.appliedFixes?.length) {
+        result += `, 已应用修复: ${output.appliedFixes.join(", ")}`;
+      }
+      result += ")";
+    }
+    return result;
   },
 
   renderToolUseMessage(input: Input, { verbose }) {

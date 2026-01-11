@@ -1,5 +1,5 @@
 /**
- * Pixi tool - Fast package manager for conda environments
+ * Pixi tool - Fast package manager for conda environments with automatic retry and mirror switching
  */
 
 import { z } from "zod";
@@ -10,6 +10,10 @@ import {
   formatResultForAssistant,
   TIMEOUTS,
 } from "./common.ts";
+import {
+  executeWithDiagnostics,
+  type DiagnosticResult,
+} from "./diagnostic-executor.ts";
 
 const pixiOperations = z.enum([
   "add",
@@ -51,6 +55,10 @@ type Input = z.infer<typeof inputSchema>;
 
 interface Output extends CommandResult {
   operation: string;
+  /** Number of attempts (only for write operations) */
+  attempts?: number;
+  /** Applied fix IDs (only for write operations) */
+  appliedFixes?: string[];
 }
 
 function getTimeout(operation: string): number {
@@ -117,19 +125,20 @@ function buildCommand(input: Input): string[] {
 
 export const PixiTool: Tool<typeof inputSchema, Output> = {
   name: "Pixi",
-  description: `Fast conda-based package manager with lockfiles.
+  description: `Fast conda-based package manager with automatic retry and mirror switching.
 
 Operations:
-- add: Add dependencies (packages, feature, platform)
+- add: Add dependencies (auto-retries with mirrors on timeout)
 - remove: Remove dependencies
 - install: Install project dependencies from lockfile
 - run: Run task or command in project environment
 - list: List project dependencies
 - init: Initialize new pixi project
 
-Use for: Cross-platform ML projects, conda packages with fast resolution,
-reproducible environments with lockfiles.
-Timeouts: add/install allow up to 15 minutes for large packages.`,
+Features:
+- Automatic timeout detection and mirror switching
+- Supports Tsinghua, Aliyun mirrors
+- Detailed diagnostics on failure`,
 
   inputSchema,
 
@@ -151,53 +160,106 @@ Timeouts: add/install allow up to 15 minutes for large packages.`,
     const cmd = buildCommand(input);
     const cwd = input.project_path || context.cwd;
 
-    // Start output display for long operations
-    const needsStreaming = ["add", "install", "remove"].includes(input.operation);
-    if (needsStreaming && context.outputDisplay) {
-      const label = `pixi ${input.operation}`;
-      context.outputDisplay.start(label, timeout);
+    // Read-only operations don't need diagnostic enhancement
+    const isReadOnly = ["list", "run"].includes(input.operation);
+
+    if (isReadOnly) {
+      // Use simple streaming execution for read operations
+      let result: CommandResult | undefined;
+      for await (const item of executeCommandStreaming(
+        cmd,
+        cwd,
+        timeout,
+        context.abortController,
+      )) {
+        if ("stream" in item) {
+          yield { type: "streaming_output", line: item };
+        } else {
+          result = item;
+        }
+      }
+
+      const output: Output = {
+        operation: input.operation,
+        ...(result || {
+          stdout: "",
+          stderr: "",
+          exitCode: -1,
+          durationMs: 0,
+          timedOut: false,
+        }),
+      };
+
+      yield {
+        type: "result",
+        data: output,
+        resultForAssistant: this.renderResultForAssistant(output),
+      };
+      return;
     }
 
-    // Use streaming execution
-    let result: CommandResult | undefined;
-    for await (const item of executeCommandStreaming(
+    // ========== Write operations: use diagnostic executor ==========
+    if (context.outputDisplay) {
+      context.outputDisplay.start(`pixi ${input.operation}`, timeout);
+    }
+
+    let result: DiagnosticResult | undefined;
+
+    for await (const item of executeWithDiagnostics(
       cmd,
       cwd,
       timeout,
       context.abortController,
+      { tool: "pixi", maxAttempts: 3 },
     )) {
       if ("stream" in item) {
         yield { type: "streaming_output", line: item };
+      } else if ("type" in item && item.type === "progress") {
+        yield { type: "progress", content: item.message };
       } else {
-        result = item;
+        result = item as DiagnosticResult;
       }
     }
 
-    // Stop output display
-    if (needsStreaming && context.outputDisplay) {
+    if (context.outputDisplay) {
       context.outputDisplay.stop();
     }
 
+    // Build output
     const output: Output = {
       operation: input.operation,
-      ...(result || {
-        stdout: "",
-        stderr: "",
-        exitCode: -1,
-        durationMs: 0,
-        timedOut: false,
-      }),
+      stdout: result?.stdout || "",
+      stderr: result?.stderr || "",
+      exitCode: result?.exitCode ?? -1,
+      durationMs: result?.durationMs || 0,
+      timedOut: result?.timedOut || false,
+      attempts: result?.attempts,
+      appliedFixes: result?.appliedFixes,
     };
+
+    // Build assistant message with diagnostic info
+    let assistantMessage = this.renderResultForAssistant(output);
+    if (result?.diagnosis?.userQuestion) {
+      assistantMessage += `\n\n⚠️ ${result.diagnosis.userQuestion}`;
+    }
 
     yield {
       type: "result",
       data: output,
-      resultForAssistant: this.renderResultForAssistant(output),
+      resultForAssistant: assistantMessage,
     };
   },
 
   renderResultForAssistant(output: Output): string {
-    return formatResultForAssistant(output, `pixi ${output.operation}`);
+    let result = formatResultForAssistant(output, `pixi ${output.operation}`);
+    if (output.attempts && output.attempts > 1) {
+      result += `\n(共尝试 ${output.attempts} 次`;
+      if (output.appliedFixes?.length) {
+        result += `, 已应用修复: ${output.appliedFixes.join(", ")}`;
+      }
+      result += ")";
+    }
+    return result;
   },
 
   renderToolUseMessage(input: Input, { verbose }) {
