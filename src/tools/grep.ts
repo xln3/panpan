@@ -192,6 +192,7 @@ async function searchFile(
 
   if (mode === "files_with_matches") {
     for (const line of lines) {
+      regex.lastIndex = 0; // Reset lastIndex for global regex
       if (regex.test(line)) {
         results.push({ file: path });
         break;
@@ -202,6 +203,7 @@ async function searchFile(
 
   // Content mode
   for (let i = 0; i < lines.length; i++) {
+    regex.lastIndex = 0; // Reset lastIndex for global regex
     if (regex.test(lines[i])) {
       if (context && context > 0) {
         // Include context lines

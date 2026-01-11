@@ -26,6 +26,11 @@
     "check": "deno check mod.ts",
     "fmt": "deno fmt",
     "lint": "deno lint",
+    "test": "deno test --allow-read --allow-write --allow-env --allow-run test/",
+    "test:unit": "deno test --allow-read --allow-write --allow-env test/core/ test/llm/ test/utils/ test/config/",
+    "test:tools": "deno test --allow-read --allow-write --allow-run test/tools/",
+    "test:coverage": "deno test --coverage=coverage/ --allow-all test/",
+    "test:watch": "deno test --watch --allow-all test/",
     "webtool": "deno run -A npm:playwright@1.57.0 install --with-deps chromium",
     "setup": "deno task webtool"
   },

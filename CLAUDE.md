@@ -136,7 +136,34 @@ deno task check    # Type check via mod.ts
 deno task fmt      # Format code
 deno task lint     # Lint code
 deno task setup    # Install playwright for web tools
+deno task test     # Run all tests
+deno task test:watch # Run tests in watch mode
 ```
+
+## Testing
+
+panpan uses Deno's native testing framework with 200+ test cases covering:
+
+```
+test/
+├── _helpers/       # collectGenerator, withTempDir, createMockToolContext
+├── _mocks/         # Mock LLMClient, fetch
+├── core/           # messages, tool-executor tests
+├── llm/            # provider-factory, stream-parser tests
+├── tools/          # glob, grep, file-read tests
+├── utils/          # plan-mode, todo-storage tests
+└── config/         # config priority tests
+```
+
+### Running Tests
+```bash
+deno task test           # All tests
+deno task test:unit      # Unit tests only
+deno task test:tools     # Tool tests only
+deno task test:coverage  # With coverage report
+```
+
+See `docs/testing.md` for detailed testing guide.
 
 ### CLI Options
 ```bash
@@ -173,6 +200,7 @@ panpan --base-url https://api.openai.com/v1 --model gpt-4o
 ## Additional Documentation
 
 Detailed tool documentation in `docs/`:
+- `docs/testing.md` - Testing guide: test patterns, helpers, running tests
 - `docs/web-fetch.md` - WebFetch tool: Playwright stealth, SSRF protection, content extraction
 - `docs/dataset-download.md` - DatasetDownload tool: two-phase workflow, background downloads
 - `docs/venv-convention-fix.md` - Python venv naming conventions to prevent import shadowing
