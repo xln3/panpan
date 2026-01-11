@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../types/tool.ts";
-import { join, isAbsolute, basename } from "https://deno.land/std@0.208.0/path/mod.ts";
+import { join, isAbsolute, basename } from "@std/path";
 
 /**
  * Check if a directory is a Python project (contains setup.py, pyproject.toml, or setup.cfg)

@@ -29,19 +29,19 @@ scoop install deno      # Windows
 
 ### Install panpan
 
-**Option 1: Install as global command (recommended)**
+**Option 1: Install from JSR (recommended)**
 
 ```bash
-deno install -A -n panpan https://raw.githubusercontent.com/xln3/panpan/master/mod.ts
+deno install -gA jsr:@xln3/panpan
 
-# Then use directly
+# Then use anywhere
 panpan --model claude-haiku-4-5-20251001
 ```
 
-**Option 2: Run without installing (like npx)**
+**Option 2: Run without installing**
 
 ```bash
-deno run -A https://raw.githubusercontent.com/xln3/panpan/master/mod.ts
+deno run -A jsr:@xln3/panpan
 ```
 
 **Option 3: Clone and run locally**

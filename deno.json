@@ -1,7 +1,11 @@
 {
-  "name": "@panpan/cli",
+  "name": "@xln3/panpan",
   "version": "0.1.0",
+  "license": "MIT",
   "exports": "./mod.ts",
+  "publish": {
+    "exclude": [".claude/", "docs/*.jpg", "docs/*.png"]
+  },
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.8",
     "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0-rc.8",
