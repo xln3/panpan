@@ -1,0 +1,31 @@
+{
+  "name": "@panpan/cli",
+  "version": "0.1.0",
+  "exports": "./mod.ts",
+  "imports": {
+    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.8",
+    "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0-rc.8",
+    "@cliffy/ansi": "jsr:@cliffy/ansi@1.0.0-rc.8",
+    "@std/fmt": "jsr:@std/fmt@1.0.8",
+    "@std/fs": "jsr:@std/fs@1.0.21",
+    "@std/path": "jsr:@std/path@1.1.4",
+    "openai": "npm:openai@6.15.0",
+    "zod": "npm:zod@4.3.4",
+    "@mozilla/readability": "npm:@mozilla/readability@0.6.0",
+    "jsdom": "npm:jsdom@27.4.0",
+    "playwright": "npm:playwright@1.57.0",
+    "typescript": "npm:typescript@5.9.3"
+  },
+  "tasks": {
+    "dev": "deno run --allow-all --watch mod.ts",
+    "run": "deno run --allow-all mod.ts",
+    "check": "deno check mod.ts",
+    "fmt": "deno fmt",
+    "lint": "deno lint",
+    "webtool": "deno run -A npm:playwright@1.57.0 install --with-deps chromium",
+    "setup": "deno task webtool"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}

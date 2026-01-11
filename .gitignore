@@ -1,0 +1,35 @@
+# Deno
+.deno/
+
+# Dependencies (Deno caches these globally, but just in case)
+node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Playwright
+playwright-report/
+test-results/
+
+# Browser storage (contains session data)
+.panpan/
+
+# Temporary files
+*.tmp
+*.temp
