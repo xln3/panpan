@@ -1,26 +1,143 @@
 # panpan 架构文档
 
-本文档包含三张架构图（Mermaid 代码 + 详细文字描述），用于准确反映 panpan 的当前架构。
+本文档包含架构演进总结和三张架构图，用于准确反映 panpan 的当前架构。
+
+原始 Agent PANDA 开源地址：https://github.com/xln3/envagent-sandbox-framework
 
 ---
 
 ## 架构演进总结
 
-### 原始架构 (Agent PANDA)
-- 线性流程: User request + System instructions + History → LLM → Success/Fail 循环
-- Docker/tmux 沙箱隔离
-- 分层环境概念 (Python → Binary → Runtime → OS → Hardware)
-- 规划中的外部搜索 (Stackoverflow, Github)
+### 一、架构彻底修改的重要特性
 
-### 当前架构 (panpan) 主要变化
-1. **核心循环**: 从 Success/Fail 判断 → 递归 async generator
-2. **LLM**: 单一 → 多 Provider (Anthropic 原生 + OpenAI 兼容)
-3. **执行环境**: Docker 沙箱 → 本地工具 + 智能并发
-4. **新功能**: Plan Mode, Subagent, Todo, System Reminder, 流式输出
+#### 1. Docker 沙箱 → 本地直接运行 + Deno 权限控制
+
+| 对比 | Agent PANDA | panpan |
+|------|-------------|--------|
+| 执行环境 | Docker container + tmux 隔离 | 直接在用户真实环境执行 |
+| 运行时 | Python 脚本 | Deno/TypeScript |
+
+**改动原因**：
+- 云服务器等场景可能没有 Docker，沙箱机制反而成为部署障碍
+- 直接操作用户真实环境才能真正解决环境问题
+- Deno 替代 Python 的优势：
+  - **权限沙箱内置**：默认无文件/网络权限，需显式授权（`--allow-read`、`--allow-net`）
+  - **单文件分发**：无 `node_modules` 地狱，直接 URL 导入
+  - **TypeScript 原生**：无需编译配置
+  - **对比 Node/Bun**：Node 无权限控制；Bun 快但权限模型不成熟
+  - **对比 Python**：Python 无原生权限隔离，依赖管理复杂
+
+#### 2. Success/Fail 循环 → Plan + Execution (Todos) 模式
+
+| 对比 | Agent PANDA | panpan |
+|------|-------------|--------|
+| 控制流 | 简单的 Success?/Fail 二元判断 | Plan Mode（只读探索）+ Todo 任务分解 |
+| 执行模型 | 线性循环 | 递归 async generator |
+
+**改动原因**：
+- 复杂环境问题需要先探索再修改，避免误操作
+- 长链路任务需要显式的进度追踪和断点
+- 递归生成器支持流式输出和中断恢复
+
+#### 3. 包管理器独立工具（pip/conda/uv/pixi）
+
+**改动原因**：
+- 不同包管理器行为差异大：
+  - **超时**：uv 5min、pip 10min、conda 15min（conda 解析依赖慢）
+  - **输出格式**：进度条、日志格式各异
+  - **venv 处理**：路径约定、激活方式不同
+- **用户灵活性**：项目 README 写的是 conda，但用户想用 uv —— panpan 不应只照搬 README 指令
+
+#### 4. 安装方式：git clone → 一行命令
+
+| 对比 | Agent PANDA | panpan |
+|------|-------------|--------|
+| 安装 | `git clone` → `docker build` → `python main.py` | `deno install jsr:@xln/panpan` |
+| 性质 | 实验性 demo | 可发布的 CLI 工具 |
 
 ---
 
-## 图一：高层概览图
+### 二、对齐市面通用智能体的必要特性
+
+这些功能是智能体标配，并非 panpan 独特卖点：
+
+- 多 LLM Provider 支持（Anthropic 原生 + OpenAI 兼容 API）
+- Todo 任务追踪（持久化）
+- 智能并发（只读工具并行、修改工具串行）
+- Subagent (Task) 子代理
+- Web 搜索（WebFetch + WebSearch）
+- Prompt Caching（Anthropic）
+
+---
+
+### 三、核心目标仍在开发中的特性
+
+**panpan 核心宗旨**：跨硬件、跨系统，能够自动、长时、长链路地复现项目/代码/迁移环境
+
+#### Task → 分类 Subagent 体系（规划中）
+
+| Subagent | 职责 | 解决的问题 |
+|----------|------|-----------|
+| **RemoteSA** | SSH 状态维护 | 避免"先装 panpan 才能装环境"的鸡生蛋问题；明确区分本地/远程操作边界 |
+| **WatcherSA** | 硬件资源监控 | GPU/CPU/Disk/RAM/IO 监控；适应云服务器非标准资源（网络盘、inodes） |
+| **PMSA** | 需求确认与终态判断 | 通过问答明确需求；编写 test 验证终态；未完成则刷新循环 |
+| **LoggerSA** | 客观操作记录 | 解决 agent 自我报告不可靠问题；通过 hook 记全记准全部历史操作 |
+
+---
+
+## 图一：架构演进对比图
+
+### Mermaid 代码
+
+```mermaid
+flowchart LR
+    subgraph PANDA["Agent PANDA (原始)"]
+        direction TB
+        P_Input["User Request"] --> P_LLM["LLM"]
+        P_LLM --> P_Check{Success?}
+        P_Check -->|no| P_LLM
+        P_Check -->|yes| P_Exit["Exit"]
+        P_Sandbox["Docker + tmux<br/>沙箱隔离"]
+        P_LLM -.-> P_Sandbox
+    end
+
+    subgraph panpan["panpan (当前)"]
+        direction TB
+        PP_Input["User Prompt"] --> PP_Plan["Plan Mode<br/>只读探索"]
+        PP_Plan --> PP_Todo["Todo 任务分解"]
+        PP_Todo --> PP_Query["Query Loop<br/>递归生成器"]
+        PP_Query --> PP_Tools["工具执行<br/>智能并发"]
+        PP_Tools -->|tool_results| PP_Query
+        PP_Query --> PP_Done["完成 / 中断"]
+        PP_Local["本地环境<br/>Deno 权限控制"]
+        PP_Tools -.-> PP_Local
+    end
+
+    PANDA -.->|"演进"| panpan
+
+    style PANDA fill:#fff3e0
+    style panpan fill:#e8f5e9
+```
+
+### 文字描述
+
+**架构演进对比图**展示从 Agent PANDA 到 panpan 的核心变化：
+
+| 维度 | Agent PANDA | panpan |
+|------|-------------|--------|
+| **控制流** | Success/Fail 二元循环 | Plan → Todo → Query Loop 递归 |
+| **执行环境** | Docker + tmux 沙箱 | 本地环境 + Deno 权限控制 |
+| **中断支持** | 无 | ESC 中断 + 流式输出 |
+| **任务追踪** | 无 | Todo 持久化 |
+
+**核心设计理念变化**：
+- 从"隔离执行"到"直接操作真实环境"
+- 从"简单循环"到"Plan + Execution 分离"
+- 从"Python demo"到"可发布的 Deno CLI"
+
+---
+
+## 图二：高层概览图（详细版）
 
 ### Mermaid 代码
 
@@ -176,7 +293,7 @@ flowchart TB
 
 ---
 
-## 图二：模块级详细图
+## 图三：模块级详细图
 
 ### Mermaid 代码
 
@@ -386,7 +503,7 @@ flowchart TB
 
 ---
 
-## 图三：完整依赖图
+## 图四：完整依赖图
 
 ### Mermaid 代码
 
