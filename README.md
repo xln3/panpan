@@ -13,17 +13,44 @@ A Deno-based CLI tool that automates ML project migration between servers using 
 
 ## Quick Start
 
-### Prerequisites
-
-- [Deno](https://deno.land/) v1.40+
-- API key for your LLM provider
-
-### Installation
+### Install Deno
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/panpan.git
+# macOS / Linux
+curl -fsSL https://deno.land/install.sh | sh
+
+# Windows (PowerShell)
+irm https://deno.land/install.ps1 | iex
+
+# Or via package managers
+brew install deno       # macOS
+scoop install deno      # Windows
+```
+
+### Install panpan
+
+**Option 1: Install as global command (recommended)**
+
+```bash
+deno install -A -n panpan https://raw.githubusercontent.com/xln3/panpan/master/mod.ts
+
+# Then use directly
+panpan --model claude-haiku-4-5-20251001
+```
+
+**Option 2: Run without installing (like npx)**
+
+```bash
+deno run -A https://raw.githubusercontent.com/xln3/panpan/master/mod.ts
+```
+
+**Option 3: Clone and run locally**
+
+```bash
+git clone https://github.com/xln3/panpan.git
 cd panpan
 deno task setup  # Install Playwright for web tools (optional)
+deno task run
 ```
 
 ### Configuration
