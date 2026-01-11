@@ -14,6 +14,7 @@ export {
   createTempFile,
   createTempStructure,
   withTempDir,
+  type TempStructure,
 } from "./temp-dir.ts";
 
 export {

@@ -19,6 +19,8 @@ import { TaskOutputTool } from "./task-output.ts";
 import { LspTool } from "./lsp.ts";
 import { CondaTool, PipTool, UvTool, PixiTool } from "./package-managers/mod.ts";
 import { DatasetDownloadTool } from "./dataset-download.ts";
+// PM SA tools
+import { PMRequirementTool, PMTestPlanTool, PMBudgetTool } from "./pm/mod.ts";
 
 /**
  * Get all available tools
@@ -46,6 +48,10 @@ export function getAllTools(): Tool[] {
     PixiTool as unknown as Tool,
     // Dataset download tool
     DatasetDownloadTool as unknown as Tool,
+    // PM SA tools
+    PMRequirementTool as unknown as Tool,
+    PMTestPlanTool as unknown as Tool,
+    PMBudgetTool as unknown as Tool,
   ];
 }
 
@@ -75,3 +81,5 @@ export { TaskOutputTool } from "./task-output.ts";
 export { CondaTool, PipTool, UvTool, PixiTool } from "./package-managers/mod.ts";
 // Dataset download tool
 export { DatasetDownloadTool } from "./dataset-download.ts";
+// PM SA tools
+export { PMRequirementTool, PMTestPlanTool, PMBudgetTool } from "./pm/mod.ts";

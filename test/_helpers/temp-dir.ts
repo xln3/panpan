@@ -36,19 +36,33 @@ export async function createTempFile(
 }
 
 /**
- * Create directory structure
+ * Structure type for createTempStructure - supports nested directories
+ */
+export type TempStructure = {
+  [key: string]: string | TempStructure;
+};
+
+/**
+ * Create directory structure (supports nested directories)
  */
 export async function createTempStructure(
   dir: string,
-  structure: Record<string, string>,
+  structure: TempStructure,
 ): Promise<void> {
   for (const [name, content] of Object.entries(structure)) {
     const path = join(dir, name);
-    const parentDir = path.substring(0, path.lastIndexOf("/"));
-    if (parentDir !== dir) {
-      await Deno.mkdir(parentDir, { recursive: true });
+    if (typeof content === "string") {
+      // It's a file
+      const parentDir = path.substring(0, path.lastIndexOf("/"));
+      if (parentDir !== dir && parentDir.length > 0) {
+        await Deno.mkdir(parentDir, { recursive: true });
+      }
+      await Deno.writeTextFile(path, content);
+    } else {
+      // It's a directory
+      await Deno.mkdir(path, { recursive: true });
+      await createTempStructure(path, content);
     }
-    await Deno.writeTextFile(path, content);
   }
 }
 
