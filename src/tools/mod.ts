@@ -21,6 +21,28 @@ import { CondaTool, PipTool, UvTool, PixiTool } from "./package-managers/mod.ts"
 import { DatasetDownloadTool } from "./dataset-download.ts";
 // PM SA tools
 import { PMRequirementTool, PMTestPlanTool, PMBudgetTool } from "./pm/mod.ts";
+// Remote SA tools
+import {
+  RemoteConnectTool,
+  RemoteExecTool,
+  RemoteFileReadTool,
+  RemoteFileWriteTool,
+  RemoteDisconnectTool,
+  RemoteListTool,
+} from "./remote/mod.ts";
+// Logger SA tools
+import {
+  LoggerConfigTool,
+  LoggerQueryTool,
+  LoggerExportTool,
+  LoggerClearTool,
+} from "./logger/mod.ts";
+// Watcher SA tools
+import {
+  WatcherStatusTool,
+  WatcherListTool,
+  WatcherAlertTool,
+} from "./watcher/mod.ts";
 
 /**
  * Get all available tools
@@ -52,6 +74,22 @@ export function getAllTools(): Tool[] {
     PMRequirementTool as unknown as Tool,
     PMTestPlanTool as unknown as Tool,
     PMBudgetTool as unknown as Tool,
+    // Remote SA tools
+    RemoteConnectTool as unknown as Tool,
+    RemoteExecTool as unknown as Tool,
+    RemoteFileReadTool as unknown as Tool,
+    RemoteFileWriteTool as unknown as Tool,
+    RemoteDisconnectTool as unknown as Tool,
+    RemoteListTool as unknown as Tool,
+    // Logger SA tools
+    LoggerConfigTool as unknown as Tool,
+    LoggerQueryTool as unknown as Tool,
+    LoggerExportTool as unknown as Tool,
+    LoggerClearTool as unknown as Tool,
+    // Watcher SA tools
+    WatcherStatusTool as unknown as Tool,
+    WatcherListTool as unknown as Tool,
+    WatcherAlertTool as unknown as Tool,
   ];
 }
 
@@ -83,3 +121,25 @@ export { CondaTool, PipTool, UvTool, PixiTool } from "./package-managers/mod.ts"
 export { DatasetDownloadTool } from "./dataset-download.ts";
 // PM SA tools
 export { PMRequirementTool, PMTestPlanTool, PMBudgetTool } from "./pm/mod.ts";
+// Remote SA tools
+export {
+  RemoteConnectTool,
+  RemoteExecTool,
+  RemoteFileReadTool,
+  RemoteFileWriteTool,
+  RemoteDisconnectTool,
+  RemoteListTool,
+} from "./remote/mod.ts";
+// Logger SA tools
+export {
+  LoggerConfigTool,
+  LoggerQueryTool,
+  LoggerExportTool,
+  LoggerClearTool,
+} from "./logger/mod.ts";
+// Watcher SA tools
+export {
+  WatcherStatusTool,
+  WatcherListTool,
+  WatcherAlertTool,
+} from "./watcher/mod.ts";
