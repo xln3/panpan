@@ -3,52 +3,52 @@
  * Verifies all SA extension types are properly exported
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 
 // Import all types to verify they're exported correctly
 import type {
-  // Diagnostics types
-  NetworkDiagnosis,
-  ErrorDiagnosis,
-  ErrorType,
-  Fix,
-  FixAction,
-  // Logger types
-  LogLevel,
-  LogEntryType,
-  LogEntry,
-  SummaryLogEntry,
-  ToolLogEntry,
-  LLMLogEntry,
-  FailurePoint,
-  LoggerHooks,
-  // Remote types
-  RemoteHost,
-  RemoteConnection,
-  DaemonInfo,
-  RemoteExecInput,
-  RemoteExecOutput,
-  RemoteFileInput,
-  // Watcher types
-  MonitorType,
-  MonitorConfig,
-  MonitorReading,
-  AlertConfig,
-  Alert,
-  Monitor,
-  // PM types
-  Requirement,
-  QA,
-  TestPlan,
-  TestCase,
-  PMBudget,
-  AlternativePlan,
-  PMClarifyInput,
-  PMTestPlanInput,
-  PMVerifyInput,
-  PMStatusInput,
   // Agent types (extended)
   AgentConfig,
+  Alert as _Alert,
+  AlertConfig,
+  AlternativePlan as _AlternativePlan,
+  DaemonInfo as _DaemonInfo,
+  ErrorDiagnosis,
+  ErrorType as _ErrorType,
+  FailurePoint as _FailurePoint,
+  Fix,
+  FixAction as _FixAction,
+  LLMLogEntry as _LLMLogEntry,
+  LogEntry,
+  LogEntryType as _LogEntryType,
+  LoggerHooks,
+  // Logger types
+  LogLevel as _LogLevel,
+  Monitor as _Monitor,
+  MonitorConfig,
+  MonitorReading as _MonitorReading,
+  // Watcher types
+  MonitorType as _MonitorType,
+  // Diagnostics types
+  NetworkDiagnosis,
+  PMBudget,
+  PMClarifyInput as _PMClarifyInput,
+  PMStatusInput as _PMStatusInput,
+  PMTestPlanInput as _PMTestPlanInput,
+  PMVerifyInput as _PMVerifyInput,
+  QA as _QA,
+  RemoteConnection,
+  RemoteExecInput as _RemoteExecInput,
+  RemoteExecOutput,
+  RemoteFileInput as _RemoteFileInput,
+  // Remote types
+  RemoteHost,
+  // PM types
+  Requirement,
+  SummaryLogEntry as _SummaryLogEntry,
+  TestCase as _TestCase,
+  TestPlan,
+  ToolLogEntry as _ToolLogEntry,
 } from "../../src/types/mod.ts";
 
 Deno.test("types/diagnostics - exports NetworkDiagnosis", () => {

@@ -45,7 +45,8 @@ Levels (from least to most verbose):
     yield {
       type: "result",
       data: { previousLevel, newLevel: input.level },
-      resultForAssistant: `Log level changed: ${previousLevel} → ${input.level}`,
+      resultForAssistant:
+        `Log level changed: ${previousLevel} → ${input.level}`,
     };
   },
 

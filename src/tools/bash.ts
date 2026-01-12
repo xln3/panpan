@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../types/tool.ts";
-import { join, isAbsolute, basename } from "@std/path";
+import { basename, isAbsolute, join } from "@std/path";
 
 /**
  * Check if a directory is a Python project (contains setup.py, pyproject.toml, or setup.cfg)
@@ -45,7 +45,8 @@ function detectVenvCommand(command: string): string | null {
   // python3.10 -m venv myenv
   // /usr/bin/python -m venv myenv
   // Also handles: cd /path && python -m venv myenv
-  const venvPattern = /(?:^|&&|\;|\|)\s*(?:[\w\/.-]*python[\d.]*)\s+-m\s+venv\s+([^\s;&|]+)/;
+  const venvPattern =
+    /(?:^|&&|\;|\|)\s*(?:[\w\/.-]*python[\d.]*)\s+-m\s+venv\s+([^\s;&|]+)/;
   const match = command.match(venvPattern);
   return match ? match[1] : null;
 }
@@ -98,7 +99,10 @@ async function validateVenvCommand(
   if (venvName !== ".venv" && !isAbsolute(venvPath)) {
     // Check if venv name might shadow a source directory
     const potentialSourceDir = join(effectiveCwd, venvName);
-    const potentialSourceDirUnderscore = join(effectiveCwd, venvName.replace(/-/g, "_"));
+    const potentialSourceDirUnderscore = join(
+      effectiveCwd,
+      venvName.replace(/-/g, "_"),
+    );
 
     let shadowsSource = false;
     let shadowedName = "";
@@ -107,9 +111,11 @@ async function validateVenvCommand(
     if (await isPythonPackage(potentialSourceDir)) {
       shadowsSource = true;
       shadowedName = venvName;
-    }
-    // Check underscore variant (e.g., venv "my-package" vs source "my_package")
-    else if (venvName.includes("-") && await isPythonPackage(potentialSourceDirUnderscore)) {
+    } // Check underscore variant (e.g., venv "my-package" vs source "my_package")
+    else if (
+      venvName.includes("-") &&
+      await isPythonPackage(potentialSourceDirUnderscore)
+    ) {
       shadowsSource = true;
       shadowedName = venvName.replace(/-/g, "_");
     }
@@ -117,7 +123,8 @@ async function validateVenvCommand(
     if (shadowsSource) {
       return {
         valid: false,
-        warning: `VENV NAMING CONFLICT: Creating venv '${venvName}' inside this Python project will shadow the source package '${shadowedName}'. ` +
+        warning:
+          `VENV NAMING CONFLICT: Creating venv '${venvName}' inside this Python project will shadow the source package '${shadowedName}'. ` +
           `This causes import errors (ModuleNotFoundError). ` +
           `Use '.venv' instead: \`python -m venv .venv\`. ` +
           `Or create venv outside the project with an absolute path.`,
@@ -205,8 +212,10 @@ export const BashTool: Tool<typeof inputSchema, Output> = {
     const start = Date.now();
 
     // Validate venv creation commands to prevent import shadowing
-    let venvWarning: string | undefined;
-    const venvValidation = await validateVenvCommand(input.command, context.cwd);
+    const venvValidation = await validateVenvCommand(
+      input.command,
+      context.cwd,
+    );
     if (!venvValidation.valid) {
       // Block the command - this would cause import shadowing
       const output: Output = {
@@ -220,11 +229,12 @@ export const BashTool: Tool<typeof inputSchema, Output> = {
       yield {
         type: "result",
         data: output,
-        resultForAssistant: `ERROR: ${venvValidation.warning}\n\nCommand blocked to prevent import shadowing issues.`,
+        resultForAssistant:
+          `ERROR: ${venvValidation.warning}\n\nCommand blocked to prevent import shadowing issues.`,
       };
       return;
     }
-    venvWarning = venvValidation.warning;
+    const venvWarning = venvValidation.warning;
 
     // Create command
     const cmd = new Deno.Command("bash", {

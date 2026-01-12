@@ -1,4 +1,8 @@
-import type { AlertConfig, Alert, MonitorReading } from "../../types/watcher.ts";
+import type {
+  Alert,
+  AlertConfig,
+  MonitorReading,
+} from "../../types/watcher.ts";
 
 /**
  * Event listener for alert events.
@@ -70,7 +74,11 @@ class AlertManager {
       if (isNaN(numValue)) continue;
 
       // Check the threshold condition
-      const matches = this.checkCondition(numValue, config.operator, config.threshold);
+      const matches = this.checkCondition(
+        numValue,
+        config.operator,
+        config.threshold,
+      );
 
       if (matches) {
         // Check cooldown period
@@ -107,7 +115,7 @@ class AlertManager {
   private checkCondition(
     value: number,
     operator: AlertConfig["operator"],
-    threshold: number
+    threshold: number,
   ): boolean {
     switch (operator) {
       case ">":

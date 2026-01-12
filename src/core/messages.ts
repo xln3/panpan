@@ -89,7 +89,9 @@ export function createProgressMessage(
  * Normalize internal messages to provider-agnostic format
  * Also validates that tool_use blocks have corresponding tool_results
  */
-export function normalizeMessagesForAPI(messages: Message[]): InternalMessage[] {
+export function normalizeMessagesForAPI(
+  messages: Message[],
+): InternalMessage[] {
   // First, clean up any orphaned tool_use blocks
   const cleanedMessages = cleanupOrphanedToolUses(messages);
 

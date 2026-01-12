@@ -58,7 +58,8 @@ export const RemoteDisconnectTool: Tool<typeof inputSchema, DisconnectOutput> =
             disconnected: false,
             error: errorMsg,
           },
-          resultForAssistant: `Failed to disconnect ${input.connection_id}: ${errorMsg}`,
+          resultForAssistant:
+            `Failed to disconnect ${input.connection_id}: ${errorMsg}`,
         };
       }
     },

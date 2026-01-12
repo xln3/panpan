@@ -133,16 +133,17 @@ export class OutputDisplayController {
     const lines: string[] = [];
 
     // Header with spinner and time remaining
-    const frame =
-      OutputDisplayController.spinnerFrames[
-        this.spinnerFrameIndex % OutputDisplayController.spinnerFrames.length
-      ];
+    const frame = OutputDisplayController.spinnerFrames[
+      this.spinnerFrameIndex % OutputDisplayController.spinnerFrames.length
+    ];
     const elapsed = Date.now() - this.startTime;
     const remaining = Math.max(0, this.timeout - elapsed);
     const remainingStr = this.formatDuration(remaining);
 
     lines.push(
-      `${colors.cyan(frame)} ${colors.yellow(`[${this.toolName}]`)} ${colors.dim(`(${remainingStr} remaining)`)}`,
+      `${colors.cyan(frame)} ${colors.yellow(`[${this.toolName}]`)} ${
+        colors.dim(`(${remainingStr} remaining)`)
+      }`,
     );
 
     // Hidden lines indicator
@@ -156,10 +157,9 @@ export class OutputDisplayController {
     const previewStart = Math.max(0, totalLines - this.previewLines);
     for (let i = previewStart; i < totalLines; i++) {
       const line = this.lineBuffer[i];
-      const text =
-        line.stream === "stderr"
-          ? colors.red(line.line)
-          : colors.dim(line.line);
+      const text = line.stream === "stderr"
+        ? colors.red(line.line)
+        : colors.dim(line.line);
       lines.push(text);
     }
 
@@ -186,10 +186,9 @@ export class OutputDisplayController {
 
     // All buffered lines
     for (const bufLine of this.lineBuffer) {
-      const text =
-        bufLine.stream === "stderr"
-          ? colors.red(bufLine.line)
-          : bufLine.line;
+      const text = bufLine.stream === "stderr"
+        ? colors.red(bufLine.line)
+        : bufLine.line;
       lines.push(text);
     }
 

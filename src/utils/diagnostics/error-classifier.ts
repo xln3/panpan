@@ -3,11 +3,19 @@
  * Analyzes stderr output to classify errors and suggest fixes.
  */
 
-import type { ErrorDiagnosis, ErrorType, Fix } from "../../types/diagnostics.ts";
+import type { ErrorDiagnosis, Fix } from "../../types/diagnostics.ts";
 import { detectProxyConfig, getMirrors } from "./config-detector.ts";
 
 /** Tool type for context-aware diagnosis */
-export type DiagnosticToolType = "pip" | "conda" | "uv" | "pixi" | "npm" | "git" | "curl" | "wget";
+export type DiagnosticToolType =
+  | "pip"
+  | "conda"
+  | "uv"
+  | "pixi"
+  | "npm"
+  | "git"
+  | "curl"
+  | "wget";
 
 /** Context for error classification */
 export interface DiagnosticContext {
@@ -21,7 +29,7 @@ export interface DiagnosticContext {
  */
 export async function classifyError(
   stderr: string,
-  context: DiagnosticContext = {}
+  context: DiagnosticContext = {},
 ): Promise<ErrorDiagnosis> {
   const stderrLower = stderr.toLowerCase();
 
@@ -67,7 +75,9 @@ export async function classifyError(
     autoFixable: false,
     suggestedFixes: [],
     requiresUserInput: true,
-    userQuestion: `执行失败，错误信息：${stderr.slice(0, 200)}。你知道如何解决吗？`,
+    userQuestion: `执行失败，错误信息：${
+      stderr.slice(0, 200)
+    }。你知道如何解决吗？`,
   };
 }
 
@@ -151,7 +161,7 @@ function extractHttpStatus(stderr: string): number | null {
 // ============ Diagnosis Builders ============
 
 async function buildTimeoutDiagnosis(
-  context: DiagnosticContext
+  context: DiagnosticContext,
 ): Promise<ErrorDiagnosis> {
   const fixes: Fix[] = [];
 
@@ -167,7 +177,9 @@ async function buildTimeoutDiagnosis(
   }
 
   // 2. Suggest mirrors based on tool type
-  if (context.tool === "pip" || context.tool === "uv" || context.tool === "pixi") {
+  if (
+    context.tool === "pip" || context.tool === "uv" || context.tool === "pixi"
+  ) {
     const mirrors = getMirrors("pypi");
     for (const mirror of mirrors) {
       fixes.push({
@@ -224,7 +236,8 @@ function buildSSLDiagnosis(): ErrorDiagnosis {
     autoFixable: false,
     suggestedFixes: [],
     requiresUserInput: true,
-    userQuestion: "SSL/TLS 证书验证失败。可能是证书过期、系统时间不正确、或网络被劫持。",
+    userQuestion:
+      "SSL/TLS 证书验证失败。可能是证书过期、系统时间不正确、或网络被劫持。",
   };
 }
 
@@ -246,13 +259,13 @@ function buildHTTPDiagnosis(statusCode: number): ErrorDiagnosis {
     autoFixable: isServerError,
     suggestedFixes: isServerError
       ? [
-          {
-            id: "retry_after_delay",
-            description: "等待 30 秒后重试",
-            confidence: 0.6,
-            action: { type: "retry_with_timeout", timeoutMs: 30000 },
-          },
-        ]
+        {
+          id: "retry_after_delay",
+          description: "等待 30 秒后重试",
+          confidence: 0.6,
+          action: { type: "retry_with_timeout", timeoutMs: 30000 },
+        },
+      ]
       : [],
     requiresUserInput: !isServerError,
     userQuestion: messages[statusCode] || `HTTP 错误 ${statusCode}`,
@@ -280,7 +293,7 @@ function buildDiskFullDiagnosis(): ErrorDiagnosis {
 }
 
 async function buildConnectionRefusedDiagnosis(
-  context: DiagnosticContext
+  _context: DiagnosticContext,
 ): Promise<ErrorDiagnosis> {
   const fixes: Fix[] = [];
 

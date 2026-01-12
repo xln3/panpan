@@ -2,7 +2,7 @@
  * Tests for remote module - daemon binary
  */
 
-import { assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import {
   DAEMON_SOURCE,
   DAEMON_VERSION,

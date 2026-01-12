@@ -4,11 +4,11 @@
  */
 
 import type {
+  LLMLogEntry,
   LogEntry,
   LogLevel,
   SummaryLogEntry,
   ToolLogEntry,
-  LLMLogEntry,
 } from "../../types/logger.ts";
 
 /**
@@ -82,7 +82,7 @@ export class LogStorage {
       };
       const targetPriority = levelPriority[options.level];
       results = results.filter(
-        (e) => levelPriority[e.level] <= targetPriority
+        (e) => levelPriority[e.level] <= targetPriority,
       );
     }
 
@@ -131,7 +131,7 @@ export class LogStorage {
    */
   getToolLogs(): ToolLogEntry[] {
     return this.entries.filter(
-      (e) => e.type === "tool_call" || e.type === "tool_result"
+      (e) => e.type === "tool_call" || e.type === "tool_result",
     ) as ToolLogEntry[];
   }
 
@@ -140,7 +140,7 @@ export class LogStorage {
    */
   getLLMLogs(): LLMLogEntry[] {
     return this.entries.filter(
-      (e) => e.type === "llm_request" || e.type === "llm_response"
+      (e) => e.type === "llm_request" || e.type === "llm_response",
     ) as LLMLogEntry[];
   }
 

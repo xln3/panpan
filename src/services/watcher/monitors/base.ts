@@ -1,4 +1,8 @@
-import type { Monitor, MonitorReading, MonitorType } from "../../../types/watcher.ts";
+import type {
+  Monitor,
+  MonitorReading,
+  MonitorType,
+} from "../../../types/watcher.ts";
 
 /**
  * Abstract base class for monitors.
@@ -36,7 +40,7 @@ export abstract class BaseMonitor implements Monitor {
    */
   protected createReading(
     values: Record<string, number | string>,
-    target: string = "local"
+    target: string = "local",
   ): MonitorReading {
     return {
       monitorId: `${this.type}-${target}`,

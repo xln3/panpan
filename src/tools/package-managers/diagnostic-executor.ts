@@ -4,19 +4,18 @@
  */
 
 import {
+  applyFix,
   classifyError,
   createRetryContext,
   shouldRetry,
-  applyFix,
   updateRetryContext,
-  type RetryContext,
 } from "../../utils/diagnostics/mod.ts";
 import {
-  executeCommandStreaming,
   type CommandResult,
+  executeCommandStreaming,
   type StreamingLine,
 } from "./common.ts";
-import { type PackageManagerTool, getMirrorConfig } from "./mirror-configs.ts";
+import { getMirrorConfig, type PackageManagerTool } from "./mirror-configs.ts";
 
 /**
  * Configuration for diagnostic executor
@@ -105,12 +104,14 @@ export async function* executeWithDiagnostics(
 
     // ========== 2. Execute current command ==========
     const startTime = Date.now();
-    for await (const item of executeCommandStreaming(
-      currentCommand,
-      cwd,
-      timeout,
-      abortController,
-    )) {
+    for await (
+      const item of executeCommandStreaming(
+        currentCommand,
+        cwd,
+        timeout,
+        abortController,
+      )
+    ) {
       if ("stream" in item) {
         yield item; // Stream line through
       } else {
@@ -172,7 +173,12 @@ export async function* executeWithDiagnostics(
 
     // ========== 7. Update context and wait before retry ==========
     const durationMs = Date.now() - startTime;
-    retryContext = updateRetryContext(retryContext, nextFix, durationMs, diagnosis);
+    retryContext = updateRetryContext(
+      retryContext,
+      nextFix,
+      durationMs,
+      diagnosis,
+    );
 
     if (delayMs > 0) {
       yield {

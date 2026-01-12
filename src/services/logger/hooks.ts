@@ -3,8 +3,13 @@
  * Hooks are non-blocking and filter entries based on current log level.
  */
 
-import type { LoggerHooks, LogEntry, LogLevel, LogEntryType } from "../../types/logger.ts";
-import { LogStorage } from "./log-storage.ts";
+import type {
+  LogEntry,
+  LogEntryType,
+  LoggerHooks,
+  LogLevel,
+} from "../../types/logger.ts";
+import type { LogStorage } from "./log-storage.ts";
 
 /**
  * Priority mapping for log levels (lower = more visible)
@@ -21,7 +26,7 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
  */
 export function createLoggerHooks(
   storage: LogStorage,
-  getCurrentLevel: () => LogLevel
+  getCurrentLevel: () => LogLevel,
 ): LoggerHooks {
   /**
    * Check if a log level should be recorded at the current level
@@ -39,7 +44,7 @@ export function createLoggerHooks(
     data: unknown,
     success = true,
     error?: string,
-    duration?: number
+    duration?: number,
   ): LogEntry => ({
     id: crypto.randomUUID(),
     level,
@@ -72,18 +77,32 @@ export function createLoggerHooks(
 
     onLLMResponse(response: unknown, durationMs: number): void {
       if (shouldLog("llm")) {
-        const entry = createEntry("llm", "llm_response", {
-          hasContent: !!(response as Record<string, unknown>)?.content,
+        const entry = createEntry(
+          "llm",
+          "llm_response",
+          {
+            hasContent: !!(response as Record<string, unknown>)?.content,
+            durationMs,
+          },
+          true,
+          undefined,
           durationMs,
-        }, true, undefined, durationMs);
+        );
         storage.add(entry);
       }
 
       // Always log at summary level for LLM calls
       if (shouldLog("summary")) {
-        storage.add(createEntry("summary", "llm_response", {
-          action: "LLM call",
-        }, true, undefined, durationMs));
+        storage.add(createEntry(
+          "summary",
+          "llm_response",
+          {
+            action: "LLM call",
+          },
+          true,
+          undefined,
+          durationMs,
+        ));
       }
     },
 
@@ -116,41 +135,72 @@ export function createLoggerHooks(
       }
     },
 
-    onToolComplete(toolName: string, result: unknown, durationMs: number): void {
+    onToolComplete(
+      toolName: string,
+      result: unknown,
+      durationMs: number,
+    ): void {
       if (shouldLog("tool")) {
-        const truncatedResult = typeof result === "string" && result.length > 500
-          ? result.slice(0, 500) + "..."
-          : result;
+        const truncatedResult =
+          typeof result === "string" && result.length > 500
+            ? result.slice(0, 500) + "..."
+            : result;
 
-        const entry = createEntry("tool", "tool_result", {
-          toolName,
-          result: truncatedResult,
+        const entry = createEntry(
+          "tool",
+          "tool_result",
+          {
+            toolName,
+            result: truncatedResult,
+            durationMs,
+          },
+          true,
+          undefined,
           durationMs,
-        }, true, undefined, durationMs);
+        );
         storage.add(entry);
       }
 
       // Summary level
       if (shouldLog("summary")) {
-        storage.add(createEntry("summary", "tool_result", {
-          action: `Tool: ${toolName}`,
-        }, true, undefined, durationMs));
+        storage.add(createEntry(
+          "summary",
+          "tool_result",
+          {
+            action: `Tool: ${toolName}`,
+          },
+          true,
+          undefined,
+          durationMs,
+        ));
       }
     },
 
     onToolError(toolName: string, error: Error): void {
       // Errors are always logged at tool level
-      const entry = createEntry("tool", "tool_result", {
-        toolName,
-        error: error.message,
-      }, false, error.message);
+      const entry = createEntry(
+        "tool",
+        "tool_result",
+        {
+          toolName,
+          error: error.message,
+        },
+        false,
+        error.message,
+      );
       storage.add(entry);
 
       // Also log at summary level
-      storage.add(createEntry("summary", "error", {
-        action: `Tool error: ${toolName}`,
-        error: error.message,
-      }, false, error.message));
+      storage.add(createEntry(
+        "summary",
+        "error",
+        {
+          action: `Tool error: ${toolName}`,
+          error: error.message,
+        },
+        false,
+        error.message,
+      ));
     },
 
     onSAInvoke(agentType: string, prompt: string): void {
@@ -179,9 +229,15 @@ export function createLoggerHooks(
 
     onAbort(reason: string): void {
       // Aborts are always logged
-      storage.add(createEntry("summary", "abort", {
+      storage.add(createEntry(
+        "summary",
+        "abort",
+        {
+          reason,
+        },
+        false,
         reason,
-      }, false, reason));
+      ));
     },
   };
 }

@@ -1,22 +1,27 @@
 # 模块 E: Watcher 监控器
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
-本模块实现 WatcherSA 的核心服务层，提供可扩展的资源监控器架构，支持 GPU/CPU/Memory/Disk/Network 等监控。
+本模块实现 WatcherSA 的核心服务层，提供可扩展的资源监控器架构，支持
+GPU/CPU/Memory/Disk/Network 等监控。
 
 ## 设计要点
+
 - **插件式架构**: Monitor 接口统一，易于扩展新监控类型
 - **本地+远程**: 通过 RemoteSA 监控远程服务器
 - **阈值告警**: 支持自定义告警规则
 
 ## 依赖关系
+
 - **依赖**: 无（可立即开始）
 - **类型依赖**: `src/types/watcher.ts`
 - **被依赖**: Sprint 2 的 tools/watcher (I)
 - **可选依赖**: RemoteSA（远程监控功能）
 
 ## 文件结构
+
 ```
 src/services/watcher/
 ├── mod.ts                  # 统一导出
@@ -36,8 +41,13 @@ src/services/watcher/
 ## 详细设计
 
 ### 1. src/services/watcher/monitors/base.ts
+
 ```typescript
-import type { Monitor, MonitorType, MonitorReading } from "../../../types/watcher.ts";
+import type {
+  Monitor,
+  MonitorReading,
+  MonitorType,
+} from "../../../types/watcher.ts";
 
 /**
  * Monitor 基类，提供通用功能
@@ -72,7 +82,7 @@ export abstract class BaseMonitor implements Monitor {
    */
   protected createReading(
     values: Record<string, number | string>,
-    target: string = "local"
+    target: string = "local",
   ): MonitorReading {
     return {
       monitorId: `${this.type}-${target}`,
@@ -104,8 +114,9 @@ export abstract class BaseMonitor implements Monitor {
 ```
 
 ### 2. src/services/watcher/monitors/gpu.ts
+
 ```typescript
-import type { MonitorType, MonitorReading } from "../../../types/watcher.ts";
+import type { MonitorReading, MonitorType } from "../../../types/watcher.ts";
 import { BaseMonitor } from "./base.ts";
 
 /**
@@ -153,9 +164,16 @@ export class GPUMonitor extends BaseMonitor {
     }
 
     // 聚合值
-    const totalUtil = gpus.reduce((sum, g) => sum + (g.utilization as number), 0) / gpus.length;
-    const totalMemUsed = gpus.reduce((sum, g) => sum + (g.memoryUsed as number), 0);
-    const totalMemTotal = gpus.reduce((sum, g) => sum + (g.memoryTotal as number), 0);
+    const totalUtil =
+      gpus.reduce((sum, g) => sum + (g.utilization as number), 0) / gpus.length;
+    const totalMemUsed = gpus.reduce(
+      (sum, g) => sum + (g.memoryUsed as number),
+      0,
+    );
+    const totalMemTotal = gpus.reduce(
+      (sum, g) => sum + (g.memoryTotal as number),
+      0,
+    );
     const maxTemp = Math.max(...gpus.map((g) => g.temperature as number));
 
     return this.createReading({
@@ -172,8 +190,9 @@ export class GPUMonitor extends BaseMonitor {
 ```
 
 ### 3. src/services/watcher/monitors/cpu.ts
+
 ```typescript
-import type { MonitorType, MonitorReading } from "../../../types/watcher.ts";
+import type { MonitorReading, MonitorType } from "../../../types/watcher.ts";
 import { BaseMonitor } from "./base.ts";
 
 /**
@@ -226,8 +245,9 @@ export class CPUMonitor extends BaseMonitor {
 ```
 
 ### 4. src/services/watcher/monitors/memory.ts
+
 ```typescript
-import type { MonitorType, MonitorReading } from "../../../types/watcher.ts";
+import type { MonitorReading, MonitorType } from "../../../types/watcher.ts";
 import { BaseMonitor } from "./base.ts";
 
 /**
@@ -275,8 +295,9 @@ export class MemoryMonitor extends BaseMonitor {
 ```
 
 ### 5. src/services/watcher/monitors/disk.ts
+
 ```typescript
-import type { MonitorType, MonitorReading } from "../../../types/watcher.ts";
+import type { MonitorReading, MonitorType } from "../../../types/watcher.ts";
 import { BaseMonitor } from "./base.ts";
 
 /**
@@ -340,8 +361,9 @@ export class DiskMonitor extends BaseMonitor {
 ```
 
 ### 6. src/services/watcher/monitors/network.ts
+
 ```typescript
-import type { MonitorType, MonitorReading } from "../../../types/watcher.ts";
+import type { MonitorReading, MonitorType } from "../../../types/watcher.ts";
 import { BaseMonitor } from "./base.ts";
 
 /**
@@ -362,7 +384,9 @@ export class NetworkMonitor extends BaseMonitor {
 
   async isAvailable(): Promise<boolean> {
     try {
-      await this.executeCommand(`cat /sys/class/net/${this.interface}/statistics/rx_bytes`);
+      await this.executeCommand(
+        `cat /sys/class/net/${this.interface}/statistics/rx_bytes`,
+      );
       return true;
     } catch {
       return false;
@@ -411,6 +435,7 @@ export class NetworkMonitor extends BaseMonitor {
 ```
 
 ### 7. src/services/watcher/monitor-registry.ts
+
 ```typescript
 import type { Monitor, MonitorType } from "../../types/watcher.ts";
 import { GPUMonitor } from "./monitors/gpu.ts";
@@ -433,7 +458,10 @@ class MonitorRegistry {
     this.register("cpu", new CPUMonitor());
     this.register("memory", new MemoryMonitor());
     this.register("disk-root", new DiskMonitor("/"));
-    this.register("disk-home", new DiskMonitor(Deno.env.get("HOME") || "/home"));
+    this.register(
+      "disk-home",
+      new DiskMonitor(Deno.env.get("HOME") || "/home"),
+    );
     this.register("network-eth0", new NetworkMonitor("eth0"));
   }
 
@@ -497,8 +525,13 @@ export const monitorRegistry = new MonitorRegistry();
 ```
 
 ### 8. src/services/watcher/alert-manager.ts
+
 ```typescript
-import type { AlertConfig, Alert, MonitorReading } from "../../types/watcher.ts";
+import type {
+  Alert,
+  AlertConfig,
+  MonitorReading,
+} from "../../types/watcher.ts";
 
 /**
  * 告警管理器
@@ -541,7 +574,9 @@ class AlertManager {
       const value = reading.values[config.metric];
       if (value === undefined) continue;
 
-      const numValue = typeof value === "number" ? value : parseFloat(value as string);
+      const numValue = typeof value === "number"
+        ? value
+        : parseFloat(value as string);
       if (isNaN(numValue)) continue;
 
       // 检查条件
@@ -616,6 +651,7 @@ export const alertManager = new AlertManager();
 ```
 
 ### 9. src/services/watcher/mod.ts
+
 ```typescript
 export { monitorRegistry } from "./monitor-registry.ts";
 export { alertManager } from "./alert-manager.ts";
@@ -630,6 +666,7 @@ export { NetworkMonitor } from "./monitors/network.ts";
 ## 终点状态（验收标准）
 
 ### 必须满足
+
 - [ ] 所有内置监控器（GPU/CPU/Memory/Disk/Network）实现完成
 - [ ] `isAvailable()` 能正确检测监控器可用性
 - [ ] `sample()` 能返回正确格式的读数
@@ -637,6 +674,7 @@ export { NetworkMonitor } from "./monitors/network.ts";
 - [ ] 告警管理器能正确触发和管理告警
 
 ### 测试场景
+
 ```typescript
 // 1. 注册内置监控器
 monitorRegistry.registerBuiltinMonitors();
@@ -675,6 +713,7 @@ const alerts = alertManager.check(reading);
 ```
 
 ### 交付物
+
 1. `src/services/watcher/monitors/base.ts` - Monitor 基类
 2. `src/services/watcher/monitors/gpu.ts` - GPU 监控器
 3. `src/services/watcher/monitors/cpu.ts` - CPU 监控器
@@ -686,4 +725,5 @@ const alerts = alertManager.check(reading);
 9. `src/services/watcher/mod.ts` - 统一导出
 
 ## 预估时间
+
 2 天

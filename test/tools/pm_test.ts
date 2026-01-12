@@ -2,11 +2,19 @@
  * Tests for PM Tools
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "jsr:@std/assert@1";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { PMRequirementTool } from "../../src/tools/pm/pm-requirement.ts";
 import { PMTestPlanTool } from "../../src/tools/pm/pm-testplan.ts";
-import { PMBudgetTool, resetBudgetTracker } from "../../src/tools/pm/pm-budget.ts";
-import { collectGenerator, createMockToolContext, withTempDir, createTempStructure } from "../_helpers/mod.ts";
+import {
+  PMBudgetTool,
+  resetBudgetTracker,
+} from "../../src/tools/pm/pm-budget.ts";
+import {
+  collectGenerator,
+  createMockToolContext,
+  createTempStructure,
+  withTempDir,
+} from "../_helpers/mod.ts";
 import type { ToolYield } from "../../src/types/tool.ts";
 
 // Type helper to extract result data
@@ -64,12 +72,18 @@ Deno.test("PMRequirementTool - analyze action detects vague terms", async () => 
 
   // Then analyze it
   const analyzeResults = await collectGenerator(
-    PMRequirementTool.call({ action: "analyze", requirement_id: reqId }, context),
+    PMRequirementTool.call(
+      { action: "analyze", requirement_id: reqId },
+      context,
+    ),
   );
 
   const data = getResultData(analyzeResults);
   assertEquals(data.isClear, false);
-  assertEquals(data.issues?.some((i: { term: string }) => i.term === "快"), true);
+  assertEquals(
+    data.issues?.some((i: { term: string }) => i.term === "快"),
+    true,
+  );
 });
 
 Deno.test("PMRequirementTool - add_qa action records question-answer", async () => {
@@ -115,7 +129,10 @@ Deno.test("PMRequirementTool - get_criteria action extracts criteria", async () 
 
   // Get criteria
   const criteriaResults = await collectGenerator(
-    PMRequirementTool.call({ action: "get_criteria", requirement_id: reqId }, context),
+    PMRequirementTool.call(
+      { action: "get_criteria", requirement_id: reqId },
+      context,
+    ),
   );
 
   const data = getResultData(criteriaResults);
@@ -128,10 +145,16 @@ Deno.test("PMRequirementTool - list action returns all requirements", async () =
 
   // Create multiple requirements
   await collectGenerator(
-    PMRequirementTool.call({ action: "create", requirement_text: "需求A" }, context),
+    PMRequirementTool.call(
+      { action: "create", requirement_text: "需求A" },
+      context,
+    ),
   );
   await collectGenerator(
-    PMRequirementTool.call({ action: "create", requirement_text: "需求B" }, context),
+    PMRequirementTool.call(
+      { action: "create", requirement_text: "需求B" },
+      context,
+    ),
   );
 
   // List them

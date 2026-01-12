@@ -1,17 +1,21 @@
 # 模块 D: Logger 服务
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
-本模块实现 LoggerSA 的核心服务层，采用**观察者模式**通过 hook 注入被动记录所有操作，提供四级日志体系。
+本模块实现 LoggerSA 的核心服务层，采用**观察者模式**通过 hook
+注入被动记录所有操作，提供四级日志体系。
 
 ## 设计要点
+
 - **观察者模式**: 通过 hook 被动记录，不影响正常执行流程
 - **四级日志**: summary > tool > llm > full
 - **客观记录**: 不受 agent 主观影响，记录包括失败操作
 - **失败分析**: 帮助找到更可能成功的替代路线
 
 ## 依赖关系
+
 - **依赖**: 无（可立即开始）
 - **类型依赖**: `src/types/logger.ts`
 - **被依赖**:
@@ -19,6 +23,7 @@
   - Sprint 3 的 core/ 修改 (L)
 
 ## 文件结构
+
 ```
 src/services/logger/
 ├── mod.ts              # 统一导出
@@ -32,17 +37,24 @@ src/services/logger/
 ## 详细设计
 
 ### 1. src/services/logger/log-storage.ts
+
 ```typescript
-import type { LogEntry, LogLevel, SummaryLogEntry, ToolLogEntry, LLMLogEntry } from "../../types/logger.ts";
+import type {
+  LLMLogEntry,
+  LogEntry,
+  LogLevel,
+  SummaryLogEntry,
+  ToolLogEntry,
+} from "../../types/logger.ts";
 
 /**
  * 日志存储配置
  */
 export interface LogStorageConfig {
-  maxEntries: number;      // 最大条目数
-  persistPath?: string;    // 持久化路径（可选）
-  autoFlush: boolean;      // 自动刷新到磁盘
-  flushInterval: number;   // 刷新间隔（ms）
+  maxEntries: number; // 最大条目数
+  persistPath?: string; // 持久化路径（可选）
+  autoFlush: boolean; // 自动刷新到磁盘
+  flushInterval: number; // 刷新间隔（ms）
 }
 
 const DEFAULT_CONFIG: LogStorageConfig = {
@@ -102,7 +114,7 @@ export class LogStorage {
       };
       const targetPriority = levelPriority[options.level];
       results = results.filter(
-        (e) => levelPriority[e.level] <= targetPriority
+        (e) => levelPriority[e.level] <= targetPriority,
       );
     }
 
@@ -151,7 +163,7 @@ export class LogStorage {
    */
   getToolLogs(): ToolLogEntry[] {
     return this.entries.filter(
-      (e) => e.type === "tool_call" || e.type === "tool_result"
+      (e) => e.type === "tool_call" || e.type === "tool_result",
     ) as ToolLogEntry[];
   }
 
@@ -160,7 +172,7 @@ export class LogStorage {
    */
   getLLMLogs(): LLMLogEntry[] {
     return this.entries.filter(
-      (e) => e.type === "llm_request" || e.type === "llm_response"
+      (e) => e.type === "llm_request" || e.type === "llm_response",
     ) as LLMLogEntry[];
   }
 
@@ -255,8 +267,9 @@ export class LogStorage {
 ```
 
 ### 2. src/services/logger/hooks.ts
+
 ```typescript
-import type { LoggerHooks, LogEntry, LogLevel } from "../../types/logger.ts";
+import type { LogEntry, LoggerHooks, LogLevel } from "../../types/logger.ts";
 import { LogStorage } from "./log-storage.ts";
 
 /**
@@ -264,7 +277,7 @@ import { LogStorage } from "./log-storage.ts";
  */
 export function createLoggerHooks(
   storage: LogStorage,
-  currentLevel: () => LogLevel
+  currentLevel: () => LogLevel,
 ): LoggerHooks {
   const shouldLog = (level: LogLevel): boolean => {
     const levelPriority: Record<LogLevel, number> = {
@@ -281,7 +294,7 @@ export function createLoggerHooks(
     type: LogEntry["type"],
     data: unknown,
     success = true,
-    error?: string
+    error?: string,
   ): LogEntry => ({
     id: crypto.randomUUID(),
     level,
@@ -311,7 +324,9 @@ export function createLoggerHooks(
     onLLMResponse(response: unknown, durationMs: number): void {
       if (shouldLog("llm")) {
         const entry = createEntry("llm", "llm_response", {
-          response: (response as Record<string, unknown>)?.content ? "..." : response,
+          response: (response as Record<string, unknown>)?.content
+            ? "..."
+            : response,
           durationMs,
         });
         entry.duration = durationMs;
@@ -352,7 +367,11 @@ export function createLoggerHooks(
       }
     },
 
-    onToolComplete(toolName: string, result: unknown, durationMs: number): void {
+    onToolComplete(
+      toolName: string,
+      result: unknown,
+      durationMs: number,
+    ): void {
       if (shouldLog("tool")) {
         const entry = createEntry("tool", "tool_result", {
           toolName,
@@ -376,17 +395,29 @@ export function createLoggerHooks(
 
     onToolError(toolName: string, error: Error): void {
       // 错误始终记录
-      const entry = createEntry("tool", "tool_result", {
-        toolName,
-        error: error.message,
-      }, false, error.message);
+      const entry = createEntry(
+        "tool",
+        "tool_result",
+        {
+          toolName,
+          error: error.message,
+        },
+        false,
+        error.message,
+      );
       storage.add(entry);
 
       // 摘要级别也记录错误
-      storage.add(createEntry("summary", "error", {
-        action: `Tool error: ${toolName}`,
-        error: error.message,
-      }, false, error.message));
+      storage.add(createEntry(
+        "summary",
+        "error",
+        {
+          action: `Tool error: ${toolName}`,
+          error: error.message,
+        },
+        false,
+        error.message,
+      ));
     },
 
     onSAInvoke(agentType: string, prompt: string): void {
@@ -422,6 +453,7 @@ export function createLoggerHooks(
 ```
 
 ### 3. src/services/logger/summarizer.ts
+
 ```typescript
 import type { LogEntry, SummaryLogEntry } from "../../types/logger.ts";
 
@@ -453,7 +485,8 @@ export function generateSummary(entries: LogEntry[]): string {
     }
 
     if (entry.type === "tool_call" || entry.type === "tool_result") {
-      const toolName = (entry.data as Record<string, unknown>)?.toolName as string;
+      const toolName = (entry.data as Record<string, unknown>)
+        ?.toolName as string;
       if (toolName) {
         stats.toolCalls.set(toolName, (stats.toolCalls.get(toolName) || 0) + 1);
       }
@@ -506,7 +539,9 @@ export function generateTimeline(entries: LogEntry[]): string {
     let description: string;
     switch (entry.type) {
       case "tool_call":
-        description = `Tool: ${(entry.data as Record<string, unknown>)?.toolName}`;
+        description = `Tool: ${
+          (entry.data as Record<string, unknown>)?.toolName
+        }`;
         break;
       case "llm_request":
         description = "LLM 请求";
@@ -515,7 +550,9 @@ export function generateTimeline(entries: LogEntry[]): string {
         description = "LLM 响应";
         break;
       case "sa_invoke":
-        description = `Subagent: ${(entry.data as Record<string, unknown>)?.agentType}`;
+        description = `Subagent: ${
+          (entry.data as Record<string, unknown>)?.agentType
+        }`;
         break;
       default:
         description = entry.type;
@@ -533,8 +570,9 @@ export function generateTimeline(entries: LogEntry[]): string {
 ```
 
 ### 4. src/services/logger/failure-analyzer.ts
+
 ```typescript
-import type { LogEntry, FailurePoint } from "../../types/logger.ts";
+import type { FailurePoint, LogEntry } from "../../types/logger.ts";
 
 /**
  * 分析失败点
@@ -550,7 +588,9 @@ export function analyzeFailures(entries: LogEntry[]): FailurePoint[] {
     const previousSteps: string[] = [];
     for (let j = Math.max(0, i - 5); j < i; j++) {
       const prev = entries[j];
-      previousSteps.push(`${prev.type}: ${JSON.stringify(prev.data).slice(0, 100)}`);
+      previousSteps.push(
+        `${prev.type}: ${JSON.stringify(prev.data).slice(0, 100)}`,
+      );
     }
 
     // 收集当时的工具状态
@@ -558,7 +598,8 @@ export function analyzeFailures(entries: LogEntry[]): FailurePoint[] {
     for (let j = 0; j <= i; j++) {
       const prev = entries[j];
       if (prev.type === "tool_result" && prev.success) {
-        const toolName = (prev.data as Record<string, unknown>)?.toolName as string;
+        const toolName = (prev.data as Record<string, unknown>)
+          ?.toolName as string;
         if (toolName) {
           toolState[toolName] = "executed";
         }
@@ -629,7 +670,7 @@ function suggestFixes(entry: LogEntry): string[] {
  */
 export function findAlternativeRoutes(
   failures: FailurePoint[],
-  allEntries: LogEntry[]
+  allEntries: LogEntry[],
 ): string[] {
   const alternatives: string[] = [];
 
@@ -660,8 +701,14 @@ export function findAlternativeRoutes(
 ```
 
 ### 5. src/services/logger/logger-service.ts
+
 ```typescript
-import type { LogLevel, LoggerHooks, LogEntry, FailurePoint } from "../../types/logger.ts";
+import type {
+  FailurePoint,
+  LogEntry,
+  LoggerHooks,
+  LogLevel,
+} from "../../types/logger.ts";
 import { LogStorage, type LogStorageConfig } from "./log-storage.ts";
 import { createLoggerHooks } from "./hooks.ts";
 import { generateSummary, generateTimeline } from "./summarizer.ts";
@@ -805,6 +852,7 @@ export const loggerService = new LoggerService();
 ```
 
 ### 6. src/services/logger/mod.ts
+
 ```typescript
 export { loggerService, type LoggerServiceConfig } from "./logger-service.ts";
 export { LogStorage, type LogStorageConfig } from "./log-storage.ts";
@@ -816,6 +864,7 @@ export { analyzeFailures, findAlternativeRoutes } from "./failure-analyzer.ts";
 ## 终点状态（验收标准）
 
 ### 必须满足
+
 - [ ] `loggerService.initialize()` 能正确初始化
 - [ ] `getHooks()` 返回的 hooks 能被注入到 core/ 中
 - [ ] 四级日志都能正确记录和查询
@@ -823,6 +872,7 @@ export { analyzeFailures, findAlternativeRoutes } from "./failure-analyzer.ts";
 - [ ] `analyzeFailures()` 能识别失败点并给出建议
 
 ### 测试场景
+
 ```typescript
 // 1. 初始化
 loggerService.initialize({ defaultLevel: "tool" });
@@ -852,6 +902,7 @@ assert(JSON.parse(json).length >= 2);
 ```
 
 ### 交付物
+
 1. `src/services/logger/log-storage.ts` - 日志存储
 2. `src/services/logger/hooks.ts` - Hook 创建
 3. `src/services/logger/summarizer.ts` - 摘要生成
@@ -860,4 +911,5 @@ assert(JSON.parse(json).length >= 2);
 6. `src/services/logger/mod.ts` - 统一导出
 
 ## 预估时间
+
 2 天

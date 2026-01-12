@@ -212,8 +212,8 @@ class BrowserManagerImpl {
         "sec-ch-ua-platform": userAgent.includes("Macintosh")
           ? '"macOS"'
           : userAgent.includes("Linux")
-            ? '"Linux"'
-            : '"Windows"',
+          ? '"Linux"'
+          : '"Windows"',
       },
       // Bypass CSP to allow our stealth scripts
       bypassCSP: true,

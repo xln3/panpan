@@ -3,10 +3,10 @@
  * Verifies that hooks are called correctly during tool execution
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { z } from "zod";
 import { ToolExecutor } from "../../src/core/tool-executor.ts";
-import { createMockToolContext, collectGenerator } from "../_helpers/mod.ts";
+import { collectGenerator, createMockToolContext } from "../_helpers/mod.ts";
 import { loggerService } from "../../src/services/mod.ts";
 import type { Tool, ToolYield } from "../../src/types/tool.ts";
 import type { ContentBlock } from "../../src/types/message.ts";
@@ -20,7 +20,11 @@ function resetLogger(): void {
   loggerService.initialize({ defaultLevel: "full" });
 }
 
-function createToolUseBlock(id: string, name: string, input: Record<string, unknown> = {}): ContentBlock {
+function createToolUseBlock(
+  id: string,
+  name: string,
+  input: Record<string, unknown> = {},
+): ContentBlock {
   return {
     type: "tool_use",
     id,
@@ -43,7 +47,11 @@ Deno.test("ToolExecutor hooks - calls onToolStart when tool begins", async () =>
     isReadOnly: () => true,
     isConcurrencySafe: () => true,
     async *call(): AsyncGenerator<ToolYield<unknown>> {
-      yield { type: "result", data: { success: true }, resultForAssistant: "ok" };
+      yield {
+        type: "result",
+        data: { success: true },
+        resultForAssistant: "ok",
+      };
     },
     renderResultForAssistant: () => "ok",
   };
@@ -60,7 +68,9 @@ Deno.test("ToolExecutor hooks - calls onToolStart when tool begins", async () =>
   // Check logs contain tool start event
   const logs = loggerService.getAll();
   const toolStartLogs = logs.filter(
-    (log) => log.type === "tool_call" && (log.data as { toolName?: string })?.toolName === "TestTool"
+    (log) =>
+      log.type === "tool_call" &&
+      (log.data as { toolName?: string })?.toolName === "TestTool",
   );
 
   assertEquals(toolStartLogs.length > 0, true, "Should have logged tool start");
@@ -78,7 +88,11 @@ Deno.test("ToolExecutor hooks - calls onToolComplete when tool succeeds", async 
     isReadOnly: () => true,
     isConcurrencySafe: () => true,
     async *call(): AsyncGenerator<ToolYield<unknown>> {
-      yield { type: "result", data: { result: "success" }, resultForAssistant: "done" };
+      yield {
+        type: "result",
+        data: { result: "success" },
+        resultForAssistant: "done",
+      };
     },
     renderResultForAssistant: () => "done",
   };
@@ -95,10 +109,16 @@ Deno.test("ToolExecutor hooks - calls onToolComplete when tool succeeds", async 
   // Check logs contain tool result event
   const logs = loggerService.getAll();
   const toolResultLogs = logs.filter(
-    (log) => log.type === "tool_result" && (log.data as { toolName?: string })?.toolName === "SuccessTool"
+    (log) =>
+      log.type === "tool_result" &&
+      (log.data as { toolName?: string })?.toolName === "SuccessTool",
   );
 
-  assertEquals(toolResultLogs.length > 0, true, "Should have logged tool result");
+  assertEquals(
+    toolResultLogs.length > 0,
+    true,
+    "Should have logged tool result",
+  );
   // Verify success status
   const resultLog = toolResultLogs[0];
   assertEquals(resultLog.success, true, "Should mark as success");
@@ -115,6 +135,7 @@ Deno.test("ToolExecutor hooks - calls onToolError when tool fails", async () => 
     inputSchema: z.object({}),
     isReadOnly: () => true,
     isConcurrencySafe: () => true,
+    // deno-lint-ignore require-yield
     async *call(): AsyncGenerator<ToolYield<unknown>> {
       throw new Error("Intentional test error");
     },
@@ -133,7 +154,7 @@ Deno.test("ToolExecutor hooks - calls onToolError when tool fails", async () => 
   // Check logs contain error event
   const logs = loggerService.getAll();
   const errorLogs = logs.filter(
-    (log) => log.type === "tool_result" && log.success === false
+    (log) => log.type === "tool_result" && log.success === false,
   );
 
   assertEquals(errorLogs.length > 0, true, "Should have logged tool error");
@@ -159,7 +180,11 @@ Deno.test("ToolExecutor hooks - calls onToolProgress for progress yields", async
       yield { type: "progress", content: "Step 1 of 3" };
       yield { type: "progress", content: "Step 2 of 3" };
       yield { type: "progress", content: "Step 3 of 3" };
-      yield { type: "result", data: { done: true }, resultForAssistant: "complete" };
+      yield {
+        type: "result",
+        data: { done: true },
+        resultForAssistant: "complete",
+      };
     },
     renderResultForAssistant: () => "complete",
   };
@@ -176,7 +201,9 @@ Deno.test("ToolExecutor hooks - calls onToolProgress for progress yields", async
   // Check logs contain progress events (only at "full" level)
   const logs = loggerService.getAll();
   const progressLogs = logs.filter(
-    (log) => log.type === "tool_call" && (log.data as { streaming?: boolean })?.streaming === true
+    (log) =>
+      log.type === "tool_call" &&
+      (log.data as { streaming?: boolean })?.streaming === true,
   );
 
   assertEquals(progressLogs.length, 3, "Should have logged 3 progress events");
@@ -232,9 +259,15 @@ Deno.test({
 
     // We should at least have the tool start log
     const toolStartLogs = logs.filter(
-      (log) => log.type === "tool_call" && (log.data as { toolName?: string })?.toolName === "SlowTool"
+      (log) =>
+        log.type === "tool_call" &&
+        (log.data as { toolName?: string })?.toolName === "SlowTool",
     );
-    assertEquals(toolStartLogs.length > 0, true, "Should have logged tool start");
+    assertEquals(
+      toolStartLogs.length > 0,
+      true,
+      "Should have logged tool start",
+    );
 
     loggerService.reset();
   },
@@ -268,12 +301,18 @@ Deno.test("ToolExecutor hooks - logs duration in milliseconds", async () => {
   // Check that duration is logged
   const logs = loggerService.getAll();
   const resultLog = logs.find(
-    (log) => log.type === "tool_result" && (log.data as { toolName?: string })?.toolName === "TimedTool"
+    (log) =>
+      log.type === "tool_result" &&
+      (log.data as { toolName?: string })?.toolName === "TimedTool",
   );
 
   assertEquals(resultLog !== undefined, true, "Should have result log");
   assertEquals(resultLog!.duration !== undefined, true, "Should have duration");
-  assertEquals(resultLog!.duration! >= 30, true, "Duration should be at least 30ms");
+  assertEquals(
+    resultLog!.duration! >= 30,
+    true,
+    "Duration should be at least 30ms",
+  );
 
   loggerService.reset();
 });

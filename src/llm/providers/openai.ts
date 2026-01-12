@@ -70,7 +70,10 @@ export class OpenAIProvider implements LLMProvider {
     request: CompletionRequest,
     signal: AbortSignal,
   ): Promise<CompletionResponse> {
-    const messages = this.formatMessages(request.messages, request.systemPrompt);
+    const messages = this.formatMessages(
+      request.messages,
+      request.systemPrompt,
+    );
     const tools = this.formatTools(request.tools);
 
     // Normalize base URL - remove trailing slash if present
@@ -130,7 +133,9 @@ export class OpenAIProvider implements LLMProvider {
           result.push({ role: "user", content: msg.content });
         } else {
           // Check if this contains tool results
-          const toolResults = msg.content.filter((b) => b.type === "tool_result");
+          const toolResults = msg.content.filter((b) =>
+            b.type === "tool_result"
+          );
           if (toolResults.length > 0) {
             // Add each tool result as separate tool message
             for (const tr of toolResults) {

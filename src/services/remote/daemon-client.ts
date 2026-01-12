@@ -135,7 +135,10 @@ export class DaemonClient {
   /**
    * Internal request method with authentication
    */
-  private async request(path: string, init: RequestInit = {}): Promise<Response> {
+  private async request(
+    path: string,
+    init: RequestInit = {},
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -153,7 +156,7 @@ export class DaemonClient {
       if (!response.ok) {
         const text = await response.text();
         throw new Error(
-          `[${this.hostname}] Daemon error ${response.status}: ${text}`
+          `[${this.hostname}] Daemon error ${response.status}: ${text}`,
         );
       }
 

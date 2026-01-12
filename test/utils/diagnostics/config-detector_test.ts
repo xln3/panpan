@@ -2,7 +2,7 @@
  * Tests for diagnostics module - config detector
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import {
   getMirrors,
   getMirrorsForUrl,
@@ -44,7 +44,9 @@ Deno.test("getMirrorsForUrl - returns mirrors for pypi.org", () => {
 });
 
 Deno.test("getMirrorsForUrl - returns mirrors for files.pythonhosted.org", () => {
-  const mirrors = getMirrorsForUrl("https://files.pythonhosted.org/packages/abc.whl");
+  const mirrors = getMirrorsForUrl(
+    "https://files.pythonhosted.org/packages/abc.whl",
+  );
   assertEquals(mirrors.length >= 1, true);
 });
 

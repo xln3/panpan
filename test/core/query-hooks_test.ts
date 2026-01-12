@@ -3,7 +3,7 @@
  * Verifies that hooks are called correctly during query execution
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { query, type QueryContext } from "../../src/core/query.ts";
 import { createUserMessage } from "../../src/core/messages.ts";
 import { createMockLLMClient, createTextResponse } from "../_mocks/mod.ts";
@@ -20,7 +20,9 @@ function resetLogger(): void {
   loggerService.initialize({ defaultLevel: "full" });
 }
 
-function createQueryContext(overrides: Partial<QueryContext> = {}): QueryContext {
+function createQueryContext(
+  overrides: Partial<QueryContext> = {},
+): QueryContext {
   return {
     abortController: new AbortController(),
     tools: [],
@@ -44,13 +46,19 @@ Deno.test("query hooks - calls onQueryStart at beginning", async () => {
   const messages: Message[] = [createUserMessage("Hi")];
   const context = createQueryContext();
 
-  await collectGenerator(query(messages, ["You are helpful"], llmClient, context));
+  await collectGenerator(
+    query(messages, ["You are helpful"], llmClient, context),
+  );
 
   // Check logs contain query start event (user_input type at full level)
   const logs = loggerService.getAll();
   const queryStartLogs = logs.filter((log) => log.type === "user_input");
 
-  assertEquals(queryStartLogs.length > 0, true, "Should have logged query start");
+  assertEquals(
+    queryStartLogs.length > 0,
+    true,
+    "Should have logged query start",
+  );
 
   loggerService.reset();
 });
@@ -65,13 +73,19 @@ Deno.test("query hooks - calls onLLMRequest before API call", async () => {
   const messages: Message[] = [createUserMessage("Test message")];
   const context = createQueryContext();
 
-  await collectGenerator(query(messages, ["System prompt"], llmClient, context));
+  await collectGenerator(
+    query(messages, ["System prompt"], llmClient, context),
+  );
 
   // Check logs contain LLM request event
   const logs = loggerService.getAll();
   const llmRequestLogs = logs.filter((log) => log.type === "llm_request");
 
-  assertEquals(llmRequestLogs.length > 0, true, "Should have logged LLM request");
+  assertEquals(
+    llmRequestLogs.length > 0,
+    true,
+    "Should have logged LLM request",
+  );
 
   loggerService.reset();
 });
@@ -92,12 +106,24 @@ Deno.test("query hooks - calls onLLMResponse after API response", async () => {
   const logs = loggerService.getAll();
   const llmResponseLogs = logs.filter((log) => log.type === "llm_response");
 
-  assertEquals(llmResponseLogs.length > 0, true, "Should have logged LLM response");
+  assertEquals(
+    llmResponseLogs.length > 0,
+    true,
+    "Should have logged LLM response",
+  );
 
   // Should have duration
   const responseLog = llmResponseLogs[0];
-  assertEquals(responseLog.duration !== undefined, true, "Should have duration");
-  assertEquals(responseLog.duration! >= 0, true, "Duration should be non-negative");
+  assertEquals(
+    responseLog.duration !== undefined,
+    true,
+    "Should have duration",
+  );
+  assertEquals(
+    responseLog.duration! >= 0,
+    true,
+    "Duration should be non-negative",
+  );
 
   loggerService.reset();
 });
@@ -117,7 +143,9 @@ Deno.test("query hooks - calls onQueryEnd for final response (no tools)", async 
   // When no tool calls, should have query end logged (as llm_response with completed flag)
   const logs = loggerService.getAll();
   const queryEndLogs = logs.filter(
-    (log) => log.type === "llm_response" && (log.data as { completed?: boolean })?.completed === true
+    (log) =>
+      log.type === "llm_response" &&
+      (log.data as { completed?: boolean })?.completed === true,
   );
 
   assertEquals(queryEndLogs.length > 0, true, "Should have logged query end");
@@ -164,7 +192,11 @@ Deno.test("query hooks - respects log level filtering", async () => {
   const logs = loggerService.getAll();
   const fullLevelLogs = logs.filter((log) => log.level === "full");
 
-  assertEquals(fullLevelLogs.length, 0, "Should not have full level logs at summary level");
+  assertEquals(
+    fullLevelLogs.length,
+    0,
+    "Should not have full level logs at summary level",
+  );
 
   loggerService.reset();
 });
@@ -188,7 +220,9 @@ Deno.test("query hooks - does not log when aborted early", async () => {
   const logs = loggerService.getAll();
 
   // May have query start but no LLM request/response
-  const llmLogs = logs.filter((log) => log.type === "llm_request" || log.type === "llm_response");
+  const llmLogs = logs.filter((log) =>
+    log.type === "llm_request" || log.type === "llm_response"
+  );
   assertEquals(llmLogs.length, 0, "Should not have LLM logs when aborted");
 
   loggerService.reset();

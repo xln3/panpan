@@ -72,7 +72,11 @@ export const RemoteFileReadTool: Tool<typeof readInputSchema, ReadOutput> = {
           path: input.path,
           host: input.connection_id,
         },
-        resultForAssistant: formatReadResult(input.connection_id, input.path, content),
+        resultForAssistant: formatReadResult(
+          input.connection_id,
+          input.path,
+          content,
+        ),
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -84,7 +88,8 @@ export const RemoteFileReadTool: Tool<typeof readInputSchema, ReadOutput> = {
           host: input.connection_id,
           error: errorMsg,
         },
-        resultForAssistant: `[${input.connection_id}] Failed to read ${input.path}: ${errorMsg}`,
+        resultForAssistant:
+          `[${input.connection_id}] Failed to read ${input.path}: ${errorMsg}`,
       };
     }
   },

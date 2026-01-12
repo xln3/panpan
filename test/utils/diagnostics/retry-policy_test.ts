@@ -2,15 +2,15 @@
  * Tests for diagnostics module - retry policy and withRetry
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import {
-  createRetryContext,
-  shouldRetry,
   applyFix,
-  updateRetryContext,
+  createRetryContext,
   getRetrySummary,
-  withRetry,
   type RetryConfig,
+  shouldRetry,
+  updateRetryContext,
+  withRetry,
 } from "../../../src/utils/diagnostics/retry-policy.ts";
 import type { ErrorDiagnosis, Fix } from "../../../src/types/diagnostics.ts";
 
@@ -31,10 +31,20 @@ Deno.test("shouldRetry - returns false when max attempts reached", () => {
   const diagnosis: ErrorDiagnosis = {
     type: "timeout",
     autoFixable: true,
-    suggestedFixes: [{ id: "fix1", description: "Fix 1", confidence: 0.8, action: { type: "set_env", key: "K", value: "V" } }],
+    suggestedFixes: [{
+      id: "fix1",
+      description: "Fix 1",
+      confidence: 0.8,
+      action: { type: "set_env", key: "K", value: "V" },
+    }],
     requiresUserInput: false,
   };
-  const config: RetryConfig = { maxAttempts: 3, initialDelayMs: 1000, maxDelayMs: 30000, backoffMultiplier: 2 };
+  const config: RetryConfig = {
+    maxAttempts: 3,
+    initialDelayMs: 1000,
+    maxDelayMs: 30000,
+    backoffMultiplier: 2,
+  };
 
   const result = shouldRetry(ctx, diagnosis, config);
   assertEquals(result.shouldRetry, false);
@@ -58,7 +68,12 @@ Deno.test("shouldRetry - returns false when no untried fixes", () => {
   const diagnosis: ErrorDiagnosis = {
     type: "timeout",
     autoFixable: true,
-    suggestedFixes: [{ id: "fix1", description: "Fix 1", confidence: 0.8, action: { type: "set_env", key: "K", value: "V" } }],
+    suggestedFixes: [{
+      id: "fix1",
+      description: "Fix 1",
+      confidence: 0.8,
+      action: { type: "set_env", key: "K", value: "V" },
+    }],
     requiresUserInput: false,
   };
 
@@ -68,7 +83,12 @@ Deno.test("shouldRetry - returns false when no untried fixes", () => {
 
 Deno.test("shouldRetry - returns true with next fix when available", () => {
   const ctx = createRetryContext();
-  const fix: Fix = { id: "fix1", description: "Fix 1", confidence: 0.8, action: { type: "set_env", key: "K", value: "V" } };
+  const fix: Fix = {
+    id: "fix1",
+    description: "Fix 1",
+    confidence: 0.8,
+    action: { type: "set_env", key: "K", value: "V" },
+  };
   const diagnosis: ErrorDiagnosis = {
     type: "timeout",
     autoFixable: true,
@@ -83,19 +103,43 @@ Deno.test("shouldRetry - returns true with next fix when available", () => {
 });
 
 Deno.test("shouldRetry - calculates exponential backoff", () => {
-  const ctx = { attempt: 2, appliedFixes: ["fix1", "fix2"], totalDurationMs: 200 };
-  const fix: Fix = { id: "fix3", description: "Fix 3", confidence: 0.5, action: { type: "set_env", key: "K", value: "V" } };
+  const ctx = {
+    attempt: 2,
+    appliedFixes: ["fix1", "fix2"],
+    totalDurationMs: 200,
+  };
+  const fix: Fix = {
+    id: "fix3",
+    description: "Fix 3",
+    confidence: 0.5,
+    action: { type: "set_env", key: "K", value: "V" },
+  };
   const diagnosis: ErrorDiagnosis = {
     type: "timeout",
     autoFixable: true,
     suggestedFixes: [
-      { id: "fix1", description: "Fix 1", confidence: 0.9, action: { type: "set_env", key: "K", value: "V" } },
-      { id: "fix2", description: "Fix 2", confidence: 0.7, action: { type: "set_env", key: "K", value: "V" } },
+      {
+        id: "fix1",
+        description: "Fix 1",
+        confidence: 0.9,
+        action: { type: "set_env", key: "K", value: "V" },
+      },
+      {
+        id: "fix2",
+        description: "Fix 2",
+        confidence: 0.7,
+        action: { type: "set_env", key: "K", value: "V" },
+      },
       fix,
     ],
     requiresUserInput: false,
   };
-  const config: RetryConfig = { maxAttempts: 5, initialDelayMs: 1000, maxDelayMs: 30000, backoffMultiplier: 2 };
+  const config: RetryConfig = {
+    maxAttempts: 5,
+    initialDelayMs: 1000,
+    maxDelayMs: 30000,
+    backoffMultiplier: 2,
+  };
 
   const result = shouldRetry(ctx, diagnosis, config);
   assertEquals(result.shouldRetry, true);
@@ -107,10 +151,20 @@ Deno.test("shouldRetry - respects maxDelayMs", () => {
   const diagnosis: ErrorDiagnosis = {
     type: "timeout",
     autoFixable: true,
-    suggestedFixes: [{ id: "fix1", description: "Fix 1", confidence: 0.8, action: { type: "set_env", key: "K", value: "V" } }],
+    suggestedFixes: [{
+      id: "fix1",
+      description: "Fix 1",
+      confidence: 0.8,
+      action: { type: "set_env", key: "K", value: "V" },
+    }],
     requiresUserInput: false,
   };
-  const config: RetryConfig = { maxAttempts: 10, initialDelayMs: 1000, maxDelayMs: 5000, backoffMultiplier: 2 };
+  const config: RetryConfig = {
+    maxAttempts: 10,
+    initialDelayMs: 1000,
+    maxDelayMs: 5000,
+    backoffMultiplier: 2,
+  };
 
   const result = shouldRetry(ctx, diagnosis, config);
   assertEquals(result.delayMs, 5000); // Capped at maxDelayMs
@@ -120,7 +174,12 @@ Deno.test("shouldRetry - respects maxDelayMs", () => {
 
 Deno.test("updateRetryContext - increments attempt", () => {
   const ctx = createRetryContext();
-  const fix: Fix = { id: "fix1", description: "Fix 1", confidence: 0.8, action: { type: "set_env", key: "K", value: "V" } };
+  const fix: Fix = {
+    id: "fix1",
+    description: "Fix 1",
+    confidence: 0.8,
+    action: { type: "set_env", key: "K", value: "V" },
+  };
 
   const updated = updateRetryContext(ctx, fix, 100);
   assertEquals(updated.attempt, 1);
@@ -128,7 +187,12 @@ Deno.test("updateRetryContext - increments attempt", () => {
 
 Deno.test("updateRetryContext - adds fix to appliedFixes", () => {
   const ctx = createRetryContext();
-  const fix: Fix = { id: "fix1", description: "Fix 1", confidence: 0.8, action: { type: "set_env", key: "K", value: "V" } };
+  const fix: Fix = {
+    id: "fix1",
+    description: "Fix 1",
+    confidence: 0.8,
+    action: { type: "set_env", key: "K", value: "V" },
+  };
 
   const updated = updateRetryContext(ctx, fix, 100);
   assertEquals(updated.appliedFixes, ["fix1"]);
@@ -136,8 +200,18 @@ Deno.test("updateRetryContext - adds fix to appliedFixes", () => {
 
 Deno.test("updateRetryContext - accumulates duration", () => {
   let ctx = createRetryContext();
-  const fix1: Fix = { id: "fix1", description: "Fix 1", confidence: 0.8, action: { type: "set_env", key: "K", value: "V" } };
-  const fix2: Fix = { id: "fix2", description: "Fix 2", confidence: 0.7, action: { type: "set_env", key: "K", value: "V" } };
+  const fix1: Fix = {
+    id: "fix1",
+    description: "Fix 1",
+    confidence: 0.8,
+    action: { type: "set_env", key: "K", value: "V" },
+  };
+  const fix2: Fix = {
+    id: "fix2",
+    description: "Fix 2",
+    confidence: 0.7,
+    action: { type: "set_env", key: "K", value: "V" },
+  };
 
   ctx = updateRetryContext(ctx, fix1, 100);
   ctx = updateRetryContext(ctx, fix2, 200);
@@ -153,7 +227,11 @@ Deno.test("getRetrySummary - returns 'no retry' for fresh context", () => {
 });
 
 Deno.test("getRetrySummary - includes attempt count and fixes", () => {
-  const ctx = { attempt: 2, appliedFixes: ["use_mirror", "increase_timeout"], totalDurationMs: 5000 };
+  const ctx = {
+    attempt: 2,
+    appliedFixes: ["use_mirror", "increase_timeout"],
+    totalDurationMs: 5000,
+  };
   const summary = getRetrySummary(ctx);
   assertEquals(summary.includes("2"), true);
   assertEquals(summary.includes("use_mirror"), true);
@@ -169,7 +247,11 @@ Deno.test("applyFix - sets environment variable for set_env action", () => {
       id: "test-fix",
       description: "Test",
       confidence: 1,
-      action: { type: "set_env", key: "TEST_APPLY_FIX_VAR", value: "test-value" },
+      action: {
+        type: "set_env",
+        key: "TEST_APPLY_FIX_VAR",
+        value: "test-value",
+      },
     };
 
     applyFix(fix);
@@ -216,12 +298,18 @@ Deno.test("applyFix - sets pip env vars for pip tool", () => {
       id: "test-fix",
       description: "Test",
       confidence: 1,
-      action: { type: "use_mirror", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
+      action: {
+        type: "use_mirror",
+        url: "https://pypi.tuna.tsinghua.edu.cn/simple",
+      },
     };
 
     applyFix(fix, { tool: "pip" });
 
-    assertEquals(Deno.env.get("PIP_INDEX_URL"), "https://pypi.tuna.tsinghua.edu.cn/simple");
+    assertEquals(
+      Deno.env.get("PIP_INDEX_URL"),
+      "https://pypi.tuna.tsinghua.edu.cn/simple",
+    );
     assertEquals(Deno.env.get("PIP_TRUSTED_HOST"), "pypi.tuna.tsinghua.edu.cn");
   } finally {
     if (originalIndex) Deno.env.set("PIP_INDEX_URL", originalIndex);
@@ -238,9 +326,10 @@ Deno.test("withRetry - returns success on first try", async () => {
 
   const { result, success, retryContext } = await withRetry(
     async () => {
+      await Promise.resolve();
       callCount++;
       return { exitCode: 0, stdout: "ok", stderr: "" };
-    }
+    },
   );
 
   assertEquals(success, true);
@@ -254,16 +343,26 @@ Deno.test("withRetry - retries on failure with fix", async () => {
 
   const { result, success, retryContext } = await withRetry(
     async () => {
+      await Promise.resolve();
       callCount++;
       if (callCount === 1) {
-        return { exitCode: 1, stdout: "", stderr: "ReadTimeoutError: timed out" };
+        return {
+          exitCode: 1,
+          stdout: "",
+          stderr: "ReadTimeoutError: timed out",
+        };
       }
       return { exitCode: 0, stdout: "ok", stderr: "" };
     },
     {
       context: { tool: "pip" },
-      config: { maxAttempts: 3, initialDelayMs: 10, maxDelayMs: 100, backoffMultiplier: 2 },
-    }
+      config: {
+        maxAttempts: 3,
+        initialDelayMs: 10,
+        maxDelayMs: 100,
+        backoffMultiplier: 2,
+      },
+    },
   );
 
   assertEquals(success, true);
@@ -275,15 +374,21 @@ Deno.test("withRetry - retries on failure with fix", async () => {
 Deno.test("withRetry - respects max attempts", async () => {
   let callCount = 0;
 
-  const { success, retryContext } = await withRetry(
+  const { success, retryContext: _retryContext } = await withRetry(
     async () => {
+      await Promise.resolve();
       callCount++;
       return { exitCode: 1, stdout: "", stderr: "ReadTimeoutError: timed out" };
     },
     {
       context: { tool: "pip" },
-      config: { maxAttempts: 2, initialDelayMs: 10, maxDelayMs: 100, backoffMultiplier: 2 },
-    }
+      config: {
+        maxAttempts: 2,
+        initialDelayMs: 10,
+        maxDelayMs: 100,
+        backoffMultiplier: 2,
+      },
+    },
   );
 
   assertEquals(success, false);
@@ -296,18 +401,28 @@ Deno.test("withRetry - calls onRetry callback", async () => {
 
   await withRetry(
     async () => {
+      await Promise.resolve();
       if (retryEvents.length === 0) {
-        return { exitCode: 1, stdout: "", stderr: "ReadTimeoutError: timed out" };
+        return {
+          exitCode: 1,
+          stdout: "",
+          stderr: "ReadTimeoutError: timed out",
+        };
       }
       return { exitCode: 0, stdout: "ok", stderr: "" };
     },
     {
       context: { tool: "pip" },
-      config: { maxAttempts: 3, initialDelayMs: 10, maxDelayMs: 100, backoffMultiplier: 2 },
+      config: {
+        maxAttempts: 3,
+        initialDelayMs: 10,
+        maxDelayMs: 100,
+        backoffMultiplier: 2,
+      },
       onRetry: (fix, attempt) => {
         retryEvents.push({ attempt, fixId: fix.id });
       },
-    }
+    },
   );
 
   assertEquals(retryEvents.length >= 1, true);
@@ -319,14 +434,20 @@ Deno.test("withRetry - custom isFailed function", async () => {
 
   const { success } = await withRetry(
     async () => {
+      await Promise.resolve();
       callCount++;
       // Returns exit code 0 but contains error in stdout
       return { exitCode: 0, stdout: "ERROR: something went wrong", stderr: "" };
     },
     {
       isFailed: (r) => r.stdout.includes("ERROR"),
-      config: { maxAttempts: 1, initialDelayMs: 10, maxDelayMs: 100, backoffMultiplier: 2 },
-    }
+      config: {
+        maxAttempts: 1,
+        initialDelayMs: 10,
+        maxDelayMs: 100,
+        backoffMultiplier: 2,
+      },
+    },
   );
 
   assertEquals(success, false);

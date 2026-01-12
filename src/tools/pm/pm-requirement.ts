@@ -165,7 +165,8 @@ Actions:
         yield {
           type: "result",
           data: { status: "qa_added", requirementId: input.requirement_id },
-          resultForAssistant: `已记录问答：Q: ${input.question} A: ${input.answer}`,
+          resultForAssistant:
+            `已记录问答：Q: ${input.question} A: ${input.answer}`,
         };
         break;
       }

@@ -252,7 +252,11 @@ export async function runREPL(config: Config): Promise<void> {
             }
 
             // Always show stats (time + tokens + cost)
-            const statsStr = formatStats(message.durationMs, message.usage, message.costUSD);
+            const statsStr = formatStats(
+              message.durationMs,
+              message.usage,
+              message.costUSD,
+            );
             console.log(colors.dim(statsStr));
           } else if (message.type === "user") {
             messages.push(message);
@@ -276,7 +280,9 @@ export async function runREPL(config: Config): Promise<void> {
         if (!abortController.signal.aborted) {
           console.log(
             colors.red(
-              `Error: ${error instanceof Error ? error.message : String(error)}`,
+              `Error: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             ),
           );
           // Show duration even on error
@@ -551,9 +557,14 @@ function renderToolResult(block: ContentBlock): void {
 
   // Show full content (no truncation)
   if (block.is_error) {
-    console.log(colors.red(`\n[Error]`) + durationSuffix + `\n${block.content}`);
+    console.log(
+      colors.red(`\n[Error]`) + durationSuffix + `\n${block.content}`,
+    );
   } else {
-    console.log(colors.dim(`\n[Result]`) + durationSuffix + colors.dim(`\n${block.content}`));
+    console.log(
+      colors.dim(`\n[Result]`) + durationSuffix +
+        colors.dim(`\n${block.content}`),
+    );
   }
 }
 
@@ -612,7 +623,9 @@ function formatStats(
     // Add cache stats if available (Anthropic prompt caching)
     if (usage.cache_read_input_tokens && usage.cache_read_input_tokens > 0) {
       tokenStr += ` (${usage.cache_read_input_tokens} cached)`;
-    } else if (usage.cache_creation_input_tokens && usage.cache_creation_input_tokens > 0) {
+    } else if (
+      usage.cache_creation_input_tokens && usage.cache_creation_input_tokens > 0
+    ) {
       tokenStr += ` (${usage.cache_creation_input_tokens} cache write)`;
     }
 

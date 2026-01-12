@@ -2,17 +2,17 @@
  * Tests for diagnostic-executor module
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import {
-  executeWithDiagnostics,
-  type DiagnosticResult,
   type DiagnosticProgress,
+  type DiagnosticResult,
+  executeWithDiagnostics,
 } from "../../../src/tools/package-managers/diagnostic-executor.ts";
 import type { StreamingLine } from "../../../src/tools/package-managers/common.ts";
 
 // Helper to collect generator results
 async function collectResults<T>(
-  gen: AsyncGenerator<T>
+  gen: AsyncGenerator<T>,
 ): Promise<T[]> {
   const results: T[] = [];
   for await (const item of gen) {
@@ -23,7 +23,7 @@ async function collectResults<T>(
 
 // Helper to extract final result from generator output
 function extractDiagnosticResult(
-  items: Array<StreamingLine | DiagnosticProgress | DiagnosticResult>
+  items: Array<StreamingLine | DiagnosticProgress | DiagnosticResult>,
 ): DiagnosticResult | undefined {
   for (const item of items) {
     if ("attempts" in item) {
@@ -45,8 +45,8 @@ Deno.test("executeWithDiagnostics - success on first try returns attempts=1", as
       cwd,
       5000,
       abortController,
-      { tool: "pip" }
-    )
+      { tool: "pip" },
+    ),
   );
 
   const result = extractDiagnosticResult(items);
@@ -66,8 +66,8 @@ Deno.test("executeWithDiagnostics - captures stdout", async () => {
       cwd,
       5000,
       abortController,
-      { tool: "pip" }
-    )
+      { tool: "pip" },
+    ),
   );
 
   const result = extractDiagnosticResult(items);
@@ -87,13 +87,13 @@ Deno.test("executeWithDiagnostics - yields streaming lines", async () => {
       cwd,
       5000,
       abortController,
-      { tool: "pip" }
-    )
+      { tool: "pip" },
+    ),
   );
 
   const streamingLines = items.filter((i): i is StreamingLine => "stream" in i);
   assertEquals(streamingLines.length > 0, true);
-  assertEquals(streamingLines.some(l => l.line.includes("line1")), true);
+  assertEquals(streamingLines.some((l) => l.line.includes("line1")), true);
 });
 
 // ============ Failure Handling ============
@@ -109,8 +109,8 @@ Deno.test("executeWithDiagnostics - failure returns diagnosis", async () => {
       cwd,
       5000,
       abortController,
-      { tool: "pip", maxAttempts: 1 }
-    )
+      { tool: "pip", maxAttempts: 1 },
+    ),
   );
 
   const result = extractDiagnosticResult(items);
@@ -132,8 +132,8 @@ Deno.test("executeWithDiagnostics - respects maxAttempts=1", async () => {
       cwd,
       5000,
       abortController,
-      { tool: "pip", maxAttempts: 1 }
-    )
+      { tool: "pip", maxAttempts: 1 },
+    ),
   );
 
   const result = extractDiagnosticResult(items);
@@ -155,8 +155,8 @@ Deno.test("executeWithDiagnostics - accepts all tool types", async () => {
         cwd,
         5000,
         abortController,
-        { tool }
-      )
+        { tool },
+      ),
     );
 
     const result = extractDiagnosticResult(items);
@@ -177,8 +177,8 @@ Deno.test("executeWithDiagnostics - result has all required fields", async () =>
       cwd,
       5000,
       abortController,
-      { tool: "pip" }
-    )
+      { tool: "pip" },
+    ),
   );
 
   const result = extractDiagnosticResult(items);

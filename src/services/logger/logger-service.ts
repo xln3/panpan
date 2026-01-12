@@ -3,11 +3,24 @@
  * Provides a unified API for logging, querying, and analysis.
  */
 
-import type { LogLevel, LoggerHooks, LogEntry, FailurePoint } from "../../types/logger.ts";
+import type {
+  FailurePoint,
+  LogEntry,
+  LoggerHooks,
+  LogLevel,
+} from "../../types/logger.ts";
 import { LogStorage, type LogStorageConfig } from "./log-storage.ts";
 import { createLoggerHooks } from "./hooks.ts";
-import { generateSummary, generateTimeline, generateOneLiner } from "./summarizer.ts";
-import { analyzeFailures, findAlternativeRoutes, getFailureSummary } from "./failure-analyzer.ts";
+import {
+  generateOneLiner,
+  generateSummary,
+  generateTimeline,
+} from "./summarizer.ts";
+import {
+  analyzeFailures,
+  findAlternativeRoutes,
+  getFailureSummary,
+} from "./failure-analyzer.ts";
 
 /**
  * Logger service configuration

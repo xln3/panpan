@@ -167,5 +167,7 @@ export function generateOneLiner(entries: LogEntry[]): string {
     ? Math.round((stats.successCount / stats.totalOperations) * 100)
     : 100;
 
-  return `${stats.totalOperations} ops | ${successRate}% success | ${stats.llmCalls} LLM calls | ${(stats.totalDurationMs / 1000).toFixed(1)}s`;
+  return `${stats.totalOperations} ops | ${successRate}% success | ${stats.llmCalls} LLM calls | ${
+    (stats.totalDurationMs / 1000).toFixed(1)
+  }s`;
 }

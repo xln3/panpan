@@ -155,7 +155,7 @@ const MIRRORS: Record<string, string[]> = {
  * Get mirror list for a service
  */
 export function getMirrors(
-  service: "pypi" | "huggingface" | "npm" | "github"
+  service: "pypi" | "huggingface" | "npm" | "github",
 ): string[] {
   return MIRRORS[service] || [];
 }

@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
-import { BudgetTracker, type BudgetStatus } from "../../services/pm/mod.ts";
+import { type BudgetStatus, BudgetTracker } from "../../services/pm/mod.ts";
 
 const inputSchema = z.object({
   action: z.enum(["init", "check", "add_tokens", "add_attempt", "report"]),
@@ -77,8 +77,9 @@ Actions:
         yield {
           type: "result",
           data: { status: "initialized", budget: status },
-          resultForAssistant:
-            `预算已初始化：Token ${status.tokenLimit}, 时间 ${Math.round(status.timeLimit / 1000)}s, 尝试 ${status.attemptsLimit} 次`,
+          resultForAssistant: `预算已初始化：Token ${status.tokenLimit}, 时间 ${
+            Math.round(status.timeLimit / 1000)
+          }s, 尝试 ${status.attemptsLimit} 次`,
         };
         break;
       }
@@ -154,8 +155,9 @@ Actions:
         yield {
           type: "result",
           data: { status: "attempt_added", budget: status },
-          resultForAssistant:
-            `已记录一次尝试，剩余 ${status.attemptsLimit - status.attemptsUsed} 次`,
+          resultForAssistant: `已记录一次尝试，剩余 ${
+            status.attemptsLimit - status.attemptsUsed
+          } 次`,
         };
         break;
       }
@@ -184,7 +186,9 @@ Actions:
     if (output.error) return `错误: ${output.error}`;
     if (output.report) return output.report;
     if (output.withinBudget !== undefined) {
-      return output.withinBudget ? "预算充足" : `预算耗尽: ${output.exhaustionReason}`;
+      return output.withinBudget
+        ? "预算充足"
+        : `预算耗尽: ${output.exhaustionReason}`;
     }
     return output.status || "操作完成";
   },

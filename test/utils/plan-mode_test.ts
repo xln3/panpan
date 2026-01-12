@@ -2,7 +2,7 @@
  * Tests for src/utils/plan-mode.ts
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import {
   enterPlanMode,
   exitPlanMode,
@@ -19,7 +19,8 @@ import {
 // Must write enough content to plan file before exit can succeed
 // =============================================================================
 
-const LONG_CONTENT = "# Implementation Plan\n\nThis is a detailed implementation plan with enough content to pass the 50 character validation check.";
+const LONG_CONTENT =
+  "# Implementation Plan\n\nThis is a detailed implementation plan with enough content to pass the 50 character validation check.";
 
 function resetPlanMode(): void {
   if (!isPlanMode()) return;
@@ -299,7 +300,10 @@ Deno.test("isToolAllowedInPlanMode - blocks Edit on other files", () => {
 
   try {
     enterPlanMode();
-    assertEquals(isToolAllowedInPlanMode("Edit", false, "/other/file.ts"), false);
+    assertEquals(
+      isToolAllowedInPlanMode("Edit", false, "/other/file.ts"),
+      false,
+    );
   } finally {
     resetPlanMode();
   }

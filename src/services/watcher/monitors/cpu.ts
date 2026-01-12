@@ -57,7 +57,9 @@ export class CPUMonitor extends BaseMonitor {
 
     // Parse running/total processes
     const runningTotal = loadParts[3] || "0/0";
-    const [running, totalProcs] = runningTotal.split("/").map((n) => parseInt(n) || 0);
+    const [running, totalProcs] = runningTotal.split("/").map((n) =>
+      parseInt(n) || 0
+    );
 
     // Get CPU core count
     const cores = parseInt(lines[2]) || 1;

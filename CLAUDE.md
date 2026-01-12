@@ -1,10 +1,13 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
 
 ## Project Overview
 
-panpan is a Deno-based CLI tool that automates reproduction of codebases and migration of ML projects between servers. It uses LLM with tool-calling for interactive assistance.
+panpan is a Deno-based CLI tool that automates reproduction of codebases and
+migration of ML projects between servers. It uses LLM with tool-calling for
+interactive assistance.
 
 ## Architecture Overview
 
@@ -53,7 +56,9 @@ src/
 ## Key Patterns
 
 ### Tool Implementation
+
 Tools are async generators yielding `ToolYield<T>`:
+
 ```typescript
 async *call(input: Input, context: ToolContext): AsyncGenerator<ToolYield<Output>> {
   // For streaming operations:
@@ -65,63 +70,74 @@ async *call(input: Input, context: ToolContext): AsyncGenerator<ToolYield<Output
 ```
 
 ### Streaming Output (Package Managers)
+
 - `executeCommandStreaming()` in `common.ts` yields lines as they arrive
 - `OutputDisplayController` manages folded/expanded display
 - Ctrl+O toggles between preview (last 3 lines) and full output
 - Adaptive timeouts: uv/pixi 5min, pip 10min, conda 15min
 
 ### Interrupt Handling
+
 - ESC key (byte 27) triggers abort via AbortController
 - Ctrl+O (byte 15) toggles output expansion
 - Raw terminal mode during processing in `repl.ts`
 
 ### Query Loop (`query.ts`)
+
 1. Normalize messages for API
 2. Call LLM with tools
 3. If tool_use blocks: execute tools, yield results, recurse
 4. If no tools: yield final response, return
 
 ### Concurrency
+
 - `isConcurrencySafe(input)` on tools determines parallel execution
 - Read-only tools (Glob, Grep, Read) can run concurrently
 - Mutating tools run sequentially
 
 ## Multi-Provider LLM Support
 
-panpan supports multiple LLM providers with automatic detection based on model name.
+panpan supports multiple LLM providers with automatic detection based on model
+name.
 
 ### Provider Detection
+
 - Models starting with `claude-*` → Anthropic native API
 - All other models → OpenAI-compatible API
 
 ### Anthropic-Specific Features
 
-**Prompt Caching**: Automatically enabled for system prompt and tool definitions.
+**Prompt Caching**: Automatically enabled for system prompt and tool
+definitions.
+
 - Caches ~6600 tokens (system prompt + tools) for 5 minutes
 - 90% cost reduction on cache hits
 - Stats shown in output: `(X cached)` or `(X cache write)`
 
 **Extended Thinking**: Shows model's reasoning process.
+
 ```bash
 panpan --model claude-opus-4-5-20251101 --thinking
 panpan --model claude-opus-4-5-20251101 --thinking --thinking-budget 20000
 ```
 
 Constraints when thinking is enabled:
+
 - Temperature forced to 1 (Anthropic requirement)
 - Tool schemas cleaned to remove `anyOf/oneOf/allOf` (beta validation)
 
 ### API Differences Handled
 
-| Aspect | OpenAI | Anthropic |
-|--------|--------|-----------|
-| Endpoint | `/chat/completions` | `/messages` |
-| Auth | `Authorization: Bearer` | `x-api-key` |
-| System prompt | Message with role | Separate `system` field |
-| Tool schema | `parameters` | `input_schema` |
-| Tool results | `role: "tool"` | Content block `type: "tool_result"` |
+| Aspect        | OpenAI                  | Anthropic                           |
+| ------------- | ----------------------- | ----------------------------------- |
+| Endpoint      | `/chat/completions`     | `/messages`                         |
+| Auth          | `Authorization: Bearer` | `x-api-key`                         |
+| System prompt | Message with role       | Separate `system` field             |
+| Tool schema   | `parameters`            | `input_schema`                      |
+| Tool results  | `role: "tool"`          | Content block `type: "tool_result"` |
 
 ## Environment Variables
+
 ```
 PANPAN_API_KEY / OPENAI_API_KEY  - Required
 PANPAN_BASE_URL / OPENAI_BASE_URL - Required (OpenAI-compatible endpoint)
@@ -129,6 +145,7 @@ PANPAN_MODEL - Required (model name)
 ```
 
 ## Running
+
 ```bash
 deno task dev      # Development with watch
 deno task run      # Production run
@@ -156,6 +173,7 @@ test/
 ```
 
 ### Running Tests
+
 ```bash
 deno task test           # All tests
 deno task test:unit      # Unit tests only
@@ -166,6 +184,7 @@ deno task test:coverage  # With coverage report
 See `docs/testing.md` for detailed testing guide.
 
 ### CLI Options
+
 ```bash
 panpan [options]
 
@@ -179,6 +198,7 @@ Options:
 ```
 
 ### Examples
+
 ```bash
 # Use Claude Opus with thinking
 panpan --model claude-opus-4-5-20251101 --thinking
@@ -191,6 +211,7 @@ panpan --base-url https://api.openai.com/v1 --model gpt-4o
 ```
 
 ## Dependencies
+
 - `@cliffy/*` - CLI framework (commands, prompts, ANSI)
 - `zod` - Schema validation for tool inputs
 - `openai` - API client (used for OpenAI-compatible endpoints)
@@ -200,7 +221,11 @@ panpan --base-url https://api.openai.com/v1 --model gpt-4o
 ## Additional Documentation
 
 Detailed tool documentation in `docs/`:
+
 - `docs/testing.md` - Testing guide: test patterns, helpers, running tests
-- `docs/web-fetch.md` - WebFetch tool: Playwright stealth, SSRF protection, content extraction
-- `docs/dataset-download.md` - DatasetDownload tool: two-phase workflow, background downloads
-- `docs/venv-convention-fix.md` - Python venv naming conventions to prevent import shadowing
+- `docs/web-fetch.md` - WebFetch tool: Playwright stealth, SSRF protection,
+  content extraction
+- `docs/dataset-download.md` - DatasetDownload tool: two-phase workflow,
+  background downloads
+- `docs/venv-convention-fix.md` - Python venv naming conventions to prevent
+  import shadowing

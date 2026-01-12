@@ -3,14 +3,14 @@
  * Tests state management and error handling (SSH bootstrap mocked)
  */
 
-import { assertEquals, assertRejects, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertRejects } from "@std/assert";
 import { ConnectionManager } from "../../../src/services/remote/connection-manager.ts";
 import type { RemoteHost } from "../../../src/types/remote.ts";
 
 // Note: Full integration tests require actual SSH access
 // These tests focus on state management and error handling
 
-const testHost: RemoteHost = {
+const _testHost: RemoteHost = {
   id: "test-server",
   hostname: "192.168.1.100",
   port: 22,
@@ -43,7 +43,7 @@ Deno.test("ConnectionManager - execute throws for unknown connection", async () 
   await assertRejects(
     () => manager.execute("nonexistent", { command: "ls" }),
     Error,
-    "not found"
+    "not found",
   );
 });
 
@@ -53,7 +53,7 @@ Deno.test("ConnectionManager - readFile throws for unknown connection", async ()
   await assertRejects(
     () => manager.readFile("nonexistent", "/tmp/test"),
     Error,
-    "not found"
+    "not found",
   );
 });
 
@@ -63,7 +63,7 @@ Deno.test("ConnectionManager - writeFile throws for unknown connection", async (
   await assertRejects(
     () => manager.writeFile("nonexistent", "/tmp/test", "content"),
     Error,
-    "not found"
+    "not found",
   );
 });
 
@@ -85,7 +85,7 @@ Deno.test("ConnectionManager - reconnect throws for unknown connection", async (
   await assertRejects(
     () => manager.reconnect("nonexistent"),
     Error,
-    "not found"
+    "not found",
   );
 });
 
@@ -139,5 +139,8 @@ Deno.test("ConnectionManager - connection ID generation from host", () => {
 
   // Without ID, format would be user@host:port
   const expectedId2 = "admin@host2:2222";
-  assertEquals(`${host2.username}@${host2.hostname}:${host2.port}`, expectedId2);
+  assertEquals(
+    `${host2.username}@${host2.hostname}:${host2.port}`,
+    expectedId2,
+  );
 });

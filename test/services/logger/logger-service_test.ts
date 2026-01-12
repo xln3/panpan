@@ -2,7 +2,7 @@
  * Tests for LoggerService - main service
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "jsr:@std/assert@1";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { LoggerService } from "../../../src/services/logger/logger-service.ts";
 
 Deno.test("LoggerService - initialize sets default level", () => {
@@ -161,7 +161,7 @@ Deno.test("LoggerService - query with filters", () => {
 
   const failures = service.query({ failuresOnly: true });
   assertEquals(failures.length >= 1, true);
-  assertEquals(failures.every(e => !e.success), true);
+  assertEquals(failures.every((e) => !e.success), true);
 
   service.reset();
 });

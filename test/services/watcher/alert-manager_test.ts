@@ -2,9 +2,13 @@
  * Tests for AlertManager - alert configuration and triggering
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import { AlertManager } from "../../../src/services/watcher/alert-manager.ts";
-import type { AlertConfig, MonitorReading, Alert } from "../../../src/types/watcher.ts";
+import type {
+  Alert,
+  AlertConfig,
+  MonitorReading,
+} from "../../../src/types/watcher.ts";
 
 function createTestConfig(overrides: Partial<AlertConfig> = {}): AlertConfig {
   return {
@@ -19,7 +23,9 @@ function createTestConfig(overrides: Partial<AlertConfig> = {}): AlertConfig {
   };
 }
 
-function createTestReading(overrides: Partial<MonitorReading> = {}): MonitorReading {
+function createTestReading(
+  overrides: Partial<MonitorReading> = {},
+): MonitorReading {
   return {
     monitorId: "cpu-local",
     type: "cpu",
@@ -122,28 +128,53 @@ Deno.test("AlertManager - check supports all operators", () => {
   const manager = new AlertManager();
 
   // Test > operator
-  manager.addConfig(createTestConfig({ id: "gt", operator: ">", threshold: 50 }));
-  assertEquals(manager.check(createTestReading({ values: { utilization: 60 } })).length, 1);
+  manager.addConfig(
+    createTestConfig({ id: "gt", operator: ">", threshold: 50 }),
+  );
+  assertEquals(
+    manager.check(createTestReading({ values: { utilization: 60 } })).length,
+    1,
+  );
   manager.clearAll();
 
   // Test < operator
-  manager.addConfig(createTestConfig({ id: "lt", operator: "<", threshold: 50 }));
-  assertEquals(manager.check(createTestReading({ values: { utilization: 40 } })).length, 1);
+  manager.addConfig(
+    createTestConfig({ id: "lt", operator: "<", threshold: 50 }),
+  );
+  assertEquals(
+    manager.check(createTestReading({ values: { utilization: 40 } })).length,
+    1,
+  );
   manager.clearAll();
 
   // Test >= operator
-  manager.addConfig(createTestConfig({ id: "gte", operator: ">=", threshold: 50 }));
-  assertEquals(manager.check(createTestReading({ values: { utilization: 50 } })).length, 1);
+  manager.addConfig(
+    createTestConfig({ id: "gte", operator: ">=", threshold: 50 }),
+  );
+  assertEquals(
+    manager.check(createTestReading({ values: { utilization: 50 } })).length,
+    1,
+  );
   manager.clearAll();
 
   // Test <= operator
-  manager.addConfig(createTestConfig({ id: "lte", operator: "<=", threshold: 50 }));
-  assertEquals(manager.check(createTestReading({ values: { utilization: 50 } })).length, 1);
+  manager.addConfig(
+    createTestConfig({ id: "lte", operator: "<=", threshold: 50 }),
+  );
+  assertEquals(
+    manager.check(createTestReading({ values: { utilization: 50 } })).length,
+    1,
+  );
   manager.clearAll();
 
   // Test == operator
-  manager.addConfig(createTestConfig({ id: "eq", operator: "==", threshold: 50 }));
-  assertEquals(manager.check(createTestReading({ values: { utilization: 50 } })).length, 1);
+  manager.addConfig(
+    createTestConfig({ id: "eq", operator: "==", threshold: 50 }),
+  );
+  assertEquals(
+    manager.check(createTestReading({ values: { utilization: 50 } })).length,
+    1,
+  );
 });
 
 Deno.test("AlertManager - check only checks matching monitorId", () => {
@@ -238,15 +269,25 @@ Deno.test("AlertManager - getStats returns correct counts", () => {
   const manager = new AlertManager();
 
   // Use different monitorIds so each config triggers independently
-  manager.addConfig(createTestConfig({ id: "config1", monitorId: "cpu-local", cooldown: 0 }));
-  manager.addConfig(createTestConfig({ id: "config2", monitorId: "memory-local", cooldown: 0 }));
+  manager.addConfig(
+    createTestConfig({ id: "config1", monitorId: "cpu-local", cooldown: 0 }),
+  );
+  manager.addConfig(
+    createTestConfig({ id: "config2", monitorId: "memory-local", cooldown: 0 }),
+  );
 
   // This reading matches config1 only
-  const cpuReading = createTestReading({ monitorId: "cpu-local", values: { utilization: 95 } });
+  const cpuReading = createTestReading({
+    monitorId: "cpu-local",
+    values: { utilization: 95 },
+  });
   manager.check(cpuReading); // triggers 1 alert
 
   // This reading matches config2 only
-  const memReading = createTestReading({ monitorId: "memory-local", values: { utilization: 95 } });
+  const memReading = createTestReading({
+    monitorId: "memory-local",
+    values: { utilization: 95 },
+  });
   manager.check(memReading); // triggers 1 alert
 
   manager.acknowledge(0);

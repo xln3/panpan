@@ -183,7 +183,10 @@ Usage:
           hooks.onSAComplete(subagent_type, result);
           markComplete(result);
         } catch (error) {
-          hooks.onToolError(`SA:${subagent_type}`, error instanceof Error ? error : new Error(String(error)));
+          hooks.onToolError(
+            `SA:${subagent_type}`,
+            error instanceof Error ? error : new Error(String(error)),
+          );
           markComplete(
             undefined,
             error instanceof Error ? error.message : String(error),
@@ -228,7 +231,10 @@ Usage:
           },
         };
       } catch (error) {
-        hooks.onToolError(`SA:${subagent_type}`, error instanceof Error ? error : new Error(String(error)));
+        hooks.onToolError(
+          `SA:${subagent_type}`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
 
         yield {
           type: "result",

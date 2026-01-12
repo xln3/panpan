@@ -1,11 +1,13 @@
 # Sprint 2: 工具层
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
 Sprint 2 在 Sprint 1 的核心服务层基础上，实现用户可调用的工具层。
 
 ## 依赖关系
+
 ```
 Sprint 1 完成后才能开始 Sprint 2
 
@@ -29,6 +31,7 @@ B (diagnostics) ──▶ K (现有工具增强)
 ```
 
 ## 工具层文件结构
+
 ```
 src/tools/
 ├── mod.ts                  # 修改：注册新工具
@@ -62,6 +65,7 @@ src/tools/
 ## G: tools/remote (依赖 A + C)
 
 ### 1. remote-connect.ts
+
 ```typescript
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
@@ -93,8 +97,14 @@ export const RemoteConnectTool: Tool<typeof inputSchema, Output> = {
   isReadOnly: () => true,
   isConcurrencySafe: () => false,
 
-  async *call(input: Input, _context: ToolContext): AsyncGenerator<ToolYield<Output>> {
-    yield { type: "progress", content: `正在连接 ${input.username}@${input.hostname}...` };
+  async *call(
+    input: Input,
+    _context: ToolContext,
+  ): AsyncGenerator<ToolYield<Output>> {
+    yield {
+      type: "progress",
+      content: `正在连接 ${input.username}@${input.hostname}...`,
+    };
 
     try {
       const connectionId = await connectionManager.connect({
@@ -115,7 +125,8 @@ export const RemoteConnectTool: Tool<typeof inputSchema, Output> = {
           status: status?.status || "unknown",
           daemonPort: status?.daemonPort,
         },
-        resultForAssistant: `已连接到 ${input.hostname}，连接 ID: ${connectionId}`,
+        resultForAssistant:
+          `已连接到 ${input.hostname}，连接 ID: ${connectionId}`,
       };
     } catch (error) {
       yield {
@@ -124,7 +135,9 @@ export const RemoteConnectTool: Tool<typeof inputSchema, Output> = {
           connectionId: "",
           status: "error",
         },
-        resultForAssistant: `连接失败: ${error instanceof Error ? error.message : String(error)}`,
+        resultForAssistant: `连接失败: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       };
     }
   },
@@ -139,6 +152,7 @@ export const RemoteConnectTool: Tool<typeof inputSchema, Output> = {
 ```
 
 ### 2. remote-exec.ts
+
 ```typescript
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
@@ -162,7 +176,10 @@ export const RemoteExecTool: Tool<typeof inputSchema, RemoteExecOutput> = {
   isReadOnly: () => false,
   isConcurrencySafe: () => false,
 
-  async *call(input: Input, _context: ToolContext): AsyncGenerator<ToolYield<RemoteExecOutput>> {
+  async *call(
+    input: Input,
+    _context: ToolContext,
+  ): AsyncGenerator<ToolYield<RemoteExecOutput>> {
     yield { type: "progress", content: `执行: ${input.command}` };
 
     try {
@@ -205,6 +222,7 @@ export const RemoteExecTool: Tool<typeof inputSchema, RemoteExecOutput> = {
 ```
 
 ### 3. remote-file.ts / remote-disconnect.ts
+
 类似模式，封装 `connectionManager.readFile()`, `writeFile()`, `disconnect()`。
 
 ---
@@ -212,6 +230,7 @@ export const RemoteExecTool: Tool<typeof inputSchema, RemoteExecOutput> = {
 ## H: tools/logger (依赖 A + D)
 
 ### 1. logger-config.ts
+
 ```typescript
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
@@ -231,13 +250,17 @@ interface Output {
 
 export const LoggerConfigTool: Tool<typeof inputSchema, Output> = {
   name: "LoggerConfig",
-  description: "配置日志级别。summary=摘要，tool=工具调用，llm=LLM交互，full=全量",
+  description:
+    "配置日志级别。summary=摘要，tool=工具调用，llm=LLM交互，full=全量",
   inputSchema,
 
   isReadOnly: () => false,
   isConcurrencySafe: () => true,
 
-  async *call(input: Input, _context: ToolContext): AsyncGenerator<ToolYield<Output>> {
+  async *call(
+    input: Input,
+    _context: ToolContext,
+  ): AsyncGenerator<ToolYield<Output>> {
     const previousLevel = loggerService.getLevel();
     loggerService.setLevel(input.level);
 
@@ -255,6 +278,7 @@ export const LoggerConfigTool: Tool<typeof inputSchema, Output> = {
 ```
 
 ### 2. logger-query.ts
+
 ```typescript
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
@@ -278,7 +302,10 @@ export const LoggerQueryTool: Tool<typeof inputSchema, string> = {
   isReadOnly: () => true,
   isConcurrencySafe: () => true,
 
-  async *call(input: Input, _context: ToolContext): AsyncGenerator<ToolYield<string>> {
+  async *call(
+    input: Input,
+    _context: ToolContext,
+  ): AsyncGenerator<ToolYield<string>> {
     let result: string;
 
     switch (input.format) {
@@ -309,6 +336,7 @@ export const LoggerQueryTool: Tool<typeof inputSchema, string> = {
 ```
 
 ### 3. logger-export.ts
+
 导出为 JSON/Markdown 文件。
 
 ---
@@ -316,55 +344,63 @@ export const LoggerQueryTool: Tool<typeof inputSchema, string> = {
 ## I: tools/watcher (依赖 A + E)
 
 ### 1. watcher-start.ts
+
 ```typescript
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
 import { monitorRegistry } from "../../services/watcher/mod.ts";
 
 const inputSchema = z.object({
-  monitors: z.array(z.enum(["gpu", "cpu", "memory", "disk", "network"])).describe("要启动的监控类型"),
+  monitors: z.array(z.enum(["gpu", "cpu", "memory", "disk", "network"]))
+    .describe("要启动的监控类型"),
 });
 
 type Input = z.infer<typeof inputSchema>;
 
-export const WatcherStartTool: Tool<typeof inputSchema, { started: string[] }> = {
-  name: "WatcherStart",
-  description: "启动资源监控",
-  inputSchema,
+export const WatcherStartTool: Tool<typeof inputSchema, { started: string[] }> =
+  {
+    name: "WatcherStart",
+    description: "启动资源监控",
+    inputSchema,
 
-  isReadOnly: () => false,
-  isConcurrencySafe: () => false,
+    isReadOnly: () => false,
+    isConcurrencySafe: () => false,
 
-  async *call(input: Input, _context: ToolContext): AsyncGenerator<ToolYield<{ started: string[] }>> {
-    monitorRegistry.registerBuiltinMonitors();
+    async *call(
+      input: Input,
+      _context: ToolContext,
+    ): AsyncGenerator<ToolYield<{ started: string[] }>> {
+      monitorRegistry.registerBuiltinMonitors();
 
-    const started: string[] = [];
-    const available = await monitorRegistry.getAvailable();
+      const started: string[] = [];
+      const available = await monitorRegistry.getAvailable();
 
-    for (const type of input.monitors) {
-      const monitors = available.filter((m) => m.type === type);
-      for (const m of monitors) {
-        started.push(`${m.type}: ${m.name}`);
+      for (const type of input.monitors) {
+        const monitors = available.filter((m) => m.type === type);
+        for (const m of monitors) {
+          started.push(`${m.type}: ${m.name}`);
+        }
       }
-    }
 
-    yield {
-      type: "result",
-      data: { started },
-      resultForAssistant: `已启动监控: ${started.join(", ")}`,
-    };
-  },
+      yield {
+        type: "result",
+        data: { started },
+        resultForAssistant: `已启动监控: ${started.join(", ")}`,
+      };
+    },
 
-  renderResultForAssistant(output: { started: string[] }): string {
-    return `监控已启动: ${output.started.join(", ")}`;
-  },
-};
+    renderResultForAssistant(output: { started: string[] }): string {
+      return `监控已启动: ${output.started.join(", ")}`;
+    },
+  };
 ```
 
 ### 2. watcher-status.ts
+
 采样并返回当前资源状态。
 
 ### 3. watcher-alert.ts
+
 配置告警规则。
 
 ---
@@ -372,6 +408,7 @@ export const WatcherStartTool: Tool<typeof inputSchema, { started: string[] }> =
 ## J: tools/pm (依赖 A + F)
 
 ### 1. pm-clarify.ts
+
 ```typescript
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
@@ -397,7 +434,10 @@ export const PMClarifyTool: Tool<typeof inputSchema, Output> = {
   isReadOnly: () => false,
   isConcurrencySafe: () => false,
 
-  async *call(input: Input, _context: ToolContext): AsyncGenerator<ToolYield<Output>> {
+  async *call(
+    input: Input,
+    _context: ToolContext,
+  ): AsyncGenerator<ToolYield<Output>> {
     const requirement = requirementsManager.create(input.requirements);
     const questions = input.auto_ask
       ? requirementsManager.generateClarifyingQuestions(requirement)
@@ -410,7 +450,9 @@ export const PMClarifyTool: Tool<typeof inputSchema, Output> = {
         questions,
       },
       resultForAssistant: questions.length > 0
-        ? `需求已记录 (${requirement.id})。需要澄清的问题:\n${questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+        ? `需求已记录 (${requirement.id})。需要澄清的问题:\n${
+          questions.map((q, i) => `${i + 1}. ${q}`).join("\n")
+        }`
         : `需求已记录 (${requirement.id})`,
     };
   },
@@ -422,12 +464,15 @@ export const PMClarifyTool: Tool<typeof inputSchema, Output> = {
 ```
 
 ### 2. pm-testplan.ts
+
 查找或生成测试。
 
 ### 3. pm-verify.ts
+
 运行验收测试。
 
 ### 4. pm-status.ts
+
 获取预算和进度状态。
 
 ---
@@ -435,6 +480,7 @@ export const PMClarifyTool: Tool<typeof inputSchema, Output> = {
 ## K: 现有工具增强 (依赖 B)
 
 ### 增强 Pip 工具
+
 ```typescript
 // 在 src/tools/package-managers/pip.ts 中添加诊断逻辑
 
@@ -514,28 +560,33 @@ async *call(input: Input, context: ToolContext) {
 ## 终点状态（验收标准）
 
 ### G: tools/remote
+
 - [ ] `RemoteConnect` 能连接远程服务器
 - [ ] `RemoteExec` 能执行命令，输出包含主机名
 - [ ] `RemoteFile*` 能读写远程文件
 - [ ] `RemoteDisconnect` 能正确断开连接
 
 ### H: tools/logger
+
 - [ ] `LoggerConfig` 能切换日志级别
 - [ ] `LoggerQuery` 能按级别/类型查询日志
 - [ ] `LoggerExport` 能导出为 JSON/Markdown
 
 ### I: tools/watcher
+
 - [ ] `WatcherStart` 能启动监控
 - [ ] `WatcherStatus` 能返回当前资源状态
 - [ ] `WatcherAlert` 能配置告警规则
 
 ### J: tools/pm
+
 - [ ] `PMClarify` 能生成澄清问题
 - [ ] `PMTestPlan` 能查找/生成测试
 - [ ] `PMVerify` 能运行验收测试
 - [ ] `PMStatus` 能显示预算状态
 
 ### K: 现有工具增强
+
 - [ ] Pip 超时时自动尝试镜像
 - [ ] Conda/Uv/Pixi 同样增强
 - [ ] 错误返回包含诊断信息
@@ -544,12 +595,12 @@ async *call(input: Input, context: ToolContext) {
 
 ## 预估时间
 
-| 模块 | 时间 | 可并行 |
-|------|------|--------|
-| G: tools/remote | 1.5 天 | 是（需 C 完成） |
-| H: tools/logger | 1 天 | 是（需 D 完成） |
-| I: tools/watcher | 1 天 | 是（需 E 完成） |
-| J: tools/pm | 1.5 天 | 是（需 F 完成） |
-| K: 工具增强 | 2 天 | 是（需 B 完成） |
+| 模块             | 时间   | 可并行          |
+| ---------------- | ------ | --------------- |
+| G: tools/remote  | 1.5 天 | 是（需 C 完成） |
+| H: tools/logger  | 1 天   | 是（需 D 完成） |
+| I: tools/watcher | 1 天   | 是（需 E 完成） |
+| J: tools/pm      | 1.5 天 | 是（需 F 完成） |
+| K: 工具增强      | 2 天   | 是（需 B 完成） |
 
 **并行执行总时间**: 约 2-3 天（取决于 Sprint 1 完成顺序）

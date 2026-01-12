@@ -2,12 +2,14 @@
  * Tests for TestGenerator
  */
 
-import { assertEquals, assertStringIncludes, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { TestGenerator } from "../../../src/services/pm/test-generator.ts";
-import { withTempDir, createTempStructure } from "../../_helpers/mod.ts";
+import { createTempStructure, withTempDir } from "../../_helpers/mod.ts";
 import type { Requirement } from "../../../src/types/pm.ts";
 
-function createMockRequirement(overrides: Partial<Requirement> = {}): Requirement {
+function createMockRequirement(
+  overrides: Partial<Requirement> = {},
+): Requirement {
   return {
     id: "test-req-1",
     original: "实现用户登录功能",

@@ -11,10 +11,10 @@ import {
   TIMEOUTS,
 } from "./common.ts";
 import {
-  executeWithDiagnostics,
   type DiagnosticResult,
+  executeWithDiagnostics,
 } from "./diagnostic-executor.ts";
-import { join, isAbsolute, basename } from "@std/path";
+import { basename, isAbsolute, join } from "@std/path";
 
 /**
  * Check if a directory is a Python project (contains setup.py, pyproject.toml, or setup.cfg)
@@ -72,7 +72,10 @@ async function validateVenvPath(
   if (venvName !== ".venv" && !isAbsolute(targetPath)) {
     // Check if venv name might shadow a source directory
     const potentialSourceDir = join(projectDir, venvName);
-    const potentialSourceDirUnderscore = join(projectDir, venvName.replace(/-/g, "_"));
+    const potentialSourceDirUnderscore = join(
+      projectDir,
+      venvName.replace(/-/g, "_"),
+    );
 
     let shadowsSource = false;
     let shadowedName = "";
@@ -81,9 +84,11 @@ async function validateVenvPath(
     if (await isPythonPackage(potentialSourceDir)) {
       shadowsSource = true;
       shadowedName = venvName;
-    }
-    // Check underscore variant (e.g., venv "my-package" vs source "my_package")
-    else if (venvName.includes("-") && await isPythonPackage(potentialSourceDirUnderscore)) {
+    } // Check underscore variant (e.g., venv "my-package" vs source "my_package")
+    else if (
+      venvName.includes("-") &&
+      await isPythonPackage(potentialSourceDirUnderscore)
+    ) {
       shadowsSource = true;
       shadowedName = venvName.replace(/-/g, "_");
     }
@@ -91,7 +96,8 @@ async function validateVenvPath(
     if (shadowsSource) {
       return {
         valid: false,
-        warning: `VENV NAMING CONFLICT: Creating venv '${venvName}' inside this Python project will shadow the source package '${shadowedName}'. ` +
+        warning:
+          `VENV NAMING CONFLICT: Creating venv '${venvName}' inside this Python project will shadow the source package '${shadowedName}'. ` +
           `This causes import errors (ModuleNotFoundError). ` +
           `Use '.venv' instead: \`uv venv\` (default) or \`uv venv .venv\`. ` +
           `Or create venv outside the project with an absolute path.`,
@@ -141,10 +147,14 @@ const inputSchema = z.object({
     .describe("Arguments for pip subcommand"),
 
   // For run
-  command: z.string().optional().describe("Command to run in project environment"),
+  command: z.string().optional().describe(
+    "Command to run in project environment",
+  ),
 
   // For venv
-  python_version: z.string().optional().describe('Python version (e.g., "3.11")'),
+  python_version: z.string().optional().describe(
+    'Python version (e.g., "3.11")',
+  ),
   path: z.string().optional().describe("Venv path (default: .venv)"),
 
   // Working directory override
@@ -243,7 +253,8 @@ function buildCommand(input: Input): string[] {
 
 export const UvTool: Tool<typeof inputSchema, Output> = {
   name: "Uv",
-  description: `Fast Python package manager with automatic retry and mirror switching.
+  description:
+    `Fast Python package manager with automatic retry and mirror switching.
 
 Operations:
 - add: Add dependencies to project (auto-retries with mirrors on timeout)
@@ -306,7 +317,8 @@ IMPORTANT for venv: Inside Python projects, use .venv (default) to avoid import 
         yield {
           type: "result",
           data: output,
-          resultForAssistant: `ERROR: ${validation.warning}\n\nVenv creation blocked to prevent import shadowing issues.`,
+          resultForAssistant:
+            `ERROR: ${validation.warning}\n\nVenv creation blocked to prevent import shadowing issues.`,
         };
         return;
       }
@@ -316,19 +328,21 @@ IMPORTANT for venv: Inside Python projects, use .venv (default) to avoid import 
     }
 
     // Determine if this is a read-only operation
-    const isReadOnly =
-      input.operation === "run" ||
-      (input.operation === "pip" && ["list", "freeze"].includes(input.pip_command || ""));
+    const isReadOnly = input.operation === "run" ||
+      (input.operation === "pip" &&
+        ["list", "freeze"].includes(input.pip_command || ""));
 
     if (isReadOnly) {
       // Use simple streaming execution for read operations
       let result: CommandResult | undefined;
-      for await (const item of executeCommandStreaming(
-        cmd,
-        cwd,
-        timeout,
-        context.abortController,
-      )) {
+      for await (
+        const item of executeCommandStreaming(
+          cmd,
+          cwd,
+          timeout,
+          context.abortController,
+        )
+      ) {
         if ("stream" in item) {
           yield { type: "streaming_output", line: item };
         } else {
@@ -365,13 +379,15 @@ IMPORTANT for venv: Inside Python projects, use .venv (default) to avoid import 
 
     let result: DiagnosticResult | undefined;
 
-    for await (const item of executeWithDiagnostics(
-      cmd,
-      cwd,
-      timeout,
-      context.abortController,
-      { tool: "uv", maxAttempts: 3 },
-    )) {
+    for await (
+      const item of executeWithDiagnostics(
+        cmd,
+        cwd,
+        timeout,
+        context.abortController,
+        { tool: "uv", maxAttempts: 3 },
+      )
+    ) {
       if ("stream" in item) {
         yield { type: "streaming_output", line: item };
       } else if ("type" in item && item.type === "progress") {
@@ -438,15 +454,16 @@ IMPORTANT for venv: Inside Python projects, use .venv (default) to avoid import 
       return `pip ${pip_command}`;
     }
     if (operation === "run" && command) {
-      const shortCmd = command.length > 40 ? command.slice(0, 39) + "…" : command;
+      const shortCmd = command.length > 40
+        ? command.slice(0, 39) + "…"
+        : command;
       return `run: ${shortCmd}`;
     }
     if (packages?.length) {
       const devLabel = dev ? " (dev)" : "";
-      const pkgList =
-        packages.length > 3
-          ? `${packages.slice(0, 3).join(", ")}... (${packages.length} total)`
-          : packages.join(", ");
+      const pkgList = packages.length > 3
+        ? `${packages.slice(0, 3).join(", ")}... (${packages.length} total)`
+        : packages.join(", ");
       return `${operation}: ${pkgList}${devLabel}`;
     }
     return operation;

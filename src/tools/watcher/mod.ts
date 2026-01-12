@@ -27,5 +27,5 @@
  * ```
  */
 
-export { WatcherStatusTool, WatcherListTool } from "./watcher-status.ts";
+export { WatcherListTool, WatcherStatusTool } from "./watcher-status.ts";
 export { WatcherAlertTool } from "./watcher-alert.ts";

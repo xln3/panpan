@@ -13,7 +13,9 @@ const inputSchema = z.object({
   cwd: z.string().optional().describe(
     "Working directory (default: home directory)",
   ),
-  env: z.record(z.string(), z.string()).optional().describe("Environment variables to set"),
+  env: z.record(z.string(), z.string()).optional().describe(
+    "Environment variables to set",
+  ),
   timeout: z.number().default(60000).describe("Timeout in milliseconds"),
 });
 

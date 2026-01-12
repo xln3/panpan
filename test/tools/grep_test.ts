@@ -2,7 +2,7 @@
  * Tests for src/tools/grep.ts
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { GrepTool } from "../../src/tools/grep.ts";
 import {
   collectGenerator,
@@ -49,9 +49,12 @@ async function runGrep(
   };
   const results = await collectGenerator(GrepTool.call(fullInput, context));
   const result = results[0] as ToolYield<GrepOutput>;
-  return result.type === "result"
-    ? result.data
-    : { mode: "files_with_matches", matches: [], numFiles: 0, truncated: false };
+  return result.type === "result" ? result.data : {
+    mode: "files_with_matches",
+    matches: [],
+    numFiles: 0,
+    truncated: false,
+  };
 }
 
 // =============================================================================
@@ -309,7 +312,11 @@ Deno.test("GrepTool - respects abort signal", async () => {
     controller.abort();
 
     const results = await collectGenerator(
-      GrepTool.call({ pattern: "pattern", output_mode: "files_with_matches", "-n": true }, context),
+      GrepTool.call({
+        pattern: "pattern",
+        output_mode: "files_with_matches",
+        "-n": true,
+      }, context),
     );
 
     assertEquals(results.length, 1);

@@ -119,7 +119,8 @@ List 3-5 files most critical for implementing this plan:
 
   PM: {
     name: "PM",
-    whenToUse: `Use PM agent when you need to ensure a task is properly completed with verification.
+    whenToUse:
+      `Use PM agent when you need to ensure a task is properly completed with verification.
 PM will:
 1. Clarify requirements by asking questions until they are specific enough
 2. Create/find tests to verify the implementation
@@ -215,7 +216,8 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
 
   Remote: {
     name: "Remote",
-    whenToUse: `Use Remote agent for executing commands and managing files on remote servers via SSH.
+    whenToUse:
+      `Use Remote agent for executing commands and managing files on remote servers via SSH.
 
 Remote agent handles:
 - SSH connection management (connect, disconnect, reconnect)
@@ -247,7 +249,8 @@ Use Remote when you need to:
 
     model: "inherit",
 
-    systemPrompt: `You are a remote server management specialist. You help execute commands and manage files on remote servers via SSH.
+    systemPrompt:
+      `You are a remote server management specialist. You help execute commands and manage files on remote servers via SSH.
 
 ## Key Responsibilities
 
@@ -284,7 +287,8 @@ Use Remote when you need to:
 
   Watcher: {
     name: "Watcher",
-    whenToUse: `Use Watcher agent for monitoring system resources (CPU, GPU, memory, disk, network).
+    whenToUse:
+      `Use Watcher agent for monitoring system resources (CPU, GPU, memory, disk, network).
 
 Watcher agent handles:
 - Sampling current resource status
@@ -313,7 +317,8 @@ Use Watcher when you need to:
 
     model: "haiku", // Fast responses for monitoring
 
-    systemPrompt: `You are a system resource monitoring specialist. You help track and report on hardware resource usage.
+    systemPrompt:
+      `You are a system resource monitoring specialist. You help track and report on hardware resource usage.
 
 ## Key Responsibilities
 

@@ -25,4 +25,4 @@
 
 export { LoggerConfigTool } from "./logger-config.ts";
 export { LoggerQueryTool } from "./logger-query.ts";
-export { LoggerExportTool, LoggerClearTool } from "./logger-export.ts";
+export { LoggerClearTool, LoggerExportTool } from "./logger-export.ts";

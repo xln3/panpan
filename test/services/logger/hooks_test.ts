@@ -2,7 +2,7 @@
  * Tests for Logger hooks
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import { createLoggerHooks } from "../../../src/services/logger/hooks.ts";
 import { LogStorage } from "../../../src/services/logger/log-storage.ts";
 import type { LogLevel } from "../../../src/types/logger.ts";
@@ -34,7 +34,7 @@ Deno.test("createLoggerHooks - onToolError always records", () => {
   // Errors should be recorded even at summary level
   const entries = storage.getAll();
   assertEquals(entries.length >= 1, true);
-  assertEquals(entries.some(e => e.success === false), true);
+  assertEquals(entries.some((e) => e.success === false), true);
 });
 
 Deno.test("createLoggerHooks - onAbort always records", () => {
@@ -58,8 +58,8 @@ Deno.test("createLoggerHooks - onToolComplete records at multiple levels", () =>
   // Should record at both tool and summary levels
   const entries = storage.getAll();
   assertEquals(entries.length, 2);
-  assertEquals(entries.some(e => e.level === "tool"), true);
-  assertEquals(entries.some(e => e.level === "summary"), true);
+  assertEquals(entries.some((e) => e.level === "tool"), true);
+  assertEquals(entries.some((e) => e.level === "summary"), true);
 });
 
 Deno.test("createLoggerHooks - onLLMResponse records duration", () => {
@@ -69,7 +69,9 @@ Deno.test("createLoggerHooks - onLLMResponse records duration", () => {
   hooks.onLLMResponse({ content: "test" }, 500);
 
   const entries = storage.getAll();
-  const llmEntry = entries.find(e => e.type === "llm_response" && e.level === "llm");
+  const llmEntry = entries.find((e) =>
+    e.type === "llm_response" && e.level === "llm"
+  );
 
   assertExists(llmEntry);
   assertEquals(llmEntry.duration, 500);
@@ -82,7 +84,7 @@ Deno.test("createLoggerHooks - onSAInvoke records subagent calls", () => {
   hooks.onSAInvoke("Explore", "Find all TypeScript files");
 
   const entries = storage.getAll();
-  const saEntry = entries.find(e => e.type === "sa_invoke");
+  const saEntry = entries.find((e) => e.type === "sa_invoke");
 
   assertExists(saEntry);
   assertEquals((saEntry.data as Record<string, unknown>).agentType, "Explore");

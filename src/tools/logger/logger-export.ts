@@ -73,7 +73,8 @@ Formats:
           entryCount,
           bytesWritten: bytes.length,
         },
-        resultForAssistant: `Exported ${entryCount} log entries to ${input.path} (${bytes.length} bytes, ${input.format})`,
+        resultForAssistant:
+          `Exported ${entryCount} log entries to ${input.path} (${bytes.length} bytes, ${input.format})`,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

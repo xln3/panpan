@@ -1,11 +1,14 @@
 # 模块 B: 诊断工具
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
-本模块实现自动诊断修复基础设施，解决 agent "甩锅给用户"的问题。当工具执行失败时，自动诊断原因并尝试修复，而不是让用户手动操作。
+本模块实现自动诊断修复基础设施，解决 agent
+"甩锅给用户"的问题。当工具执行失败时，自动诊断原因并尝试修复，而不是让用户手动操作。
 
 ## 问题示例（坏的行为）
+
 ```
 ## NEXT STEPS:
 # With proxy
@@ -14,17 +17,20 @@ huggingface-cli download stabilityai/sd-turbo
 ```
 
 ## 期望行为
+
 1. 检测到下载失败
 2. 自动诊断：代理配置？镜像可用？DNS 问题？
 3. 自动尝试修复
 4. 如果都失败，带着具体诊断信息询问用户
 
 ## 依赖关系
+
 - **依赖**: 无（可立即开始）
 - **类型依赖**: `src/types/diagnostics.ts`（可先开发，后导入）
 - **被依赖**: Sprint 2 的工具增强 (K)
 
 ## 文件结构
+
 ```
 src/utils/diagnostics/
 ├── mod.ts               # 统一导出
@@ -37,6 +43,7 @@ src/utils/diagnostics/
 ## 详细设计
 
 ### 1. src/utils/diagnostics/network-diagnostics.ts
+
 ```typescript
 import type { NetworkDiagnosis } from "../../types/diagnostics.ts";
 
@@ -44,7 +51,7 @@ import type { NetworkDiagnosis } from "../../types/diagnostics.ts";
  * 执行完整的网络诊断
  */
 export async function diagnoseNetwork(
-  targetUrl?: string
+  targetUrl?: string,
 ): Promise<NetworkDiagnosis> {
   const results: NetworkDiagnosis = {
     networkReachable: false,
@@ -192,6 +199,7 @@ export { detectProxyConfig } from "./config-detector.ts";
 ```
 
 ### 2. src/utils/diagnostics/config-detector.ts
+
 ```typescript
 /**
  * 检测系统中配置的代理
@@ -324,7 +332,7 @@ function isValidProxyUrl(url: string): boolean {
  * 获取服务的镜像列表
  */
 export function getMirrors(
-  service: "pypi" | "huggingface" | "npm" | "github"
+  service: "pypi" | "huggingface" | "npm" | "github",
 ): string[] {
   const mirrors: Record<string, string[]> = {
     pypi: [
@@ -359,9 +367,18 @@ export function getPipMirrorEnv(mirrorUrl: string): Record<string, string> {
 ```
 
 ### 3. src/utils/diagnostics/error-classifier.ts
+
 ```typescript
-import type { ErrorDiagnosis, ErrorType, Fix } from "../../types/diagnostics.ts";
-import { detectProxyConfig, getMirrors, getPipMirrorEnv } from "./config-detector.ts";
+import type {
+  ErrorDiagnosis,
+  ErrorType,
+  Fix,
+} from "../../types/diagnostics.ts";
+import {
+  detectProxyConfig,
+  getMirrors,
+  getPipMirrorEnv,
+} from "./config-detector.ts";
 
 /**
  * 分类错误并生成修复建议
@@ -372,7 +389,7 @@ export async function classifyError(
     command?: string;
     tool?: "pip" | "conda" | "uv" | "npm" | "git" | "curl" | "wget";
     url?: string;
-  } = {}
+  } = {},
 ): Promise<ErrorDiagnosis> {
   const stderrLower = stderr.toLowerCase();
 
@@ -406,7 +423,9 @@ export async function classifyError(
   }
 
   // 4. HTTP 错误
-  const httpMatch = stderr.match(/(\d{3})\s*(client error|server error|error)/i);
+  const httpMatch = stderr.match(
+    /(\d{3})\s*(client error|server error|error)/i,
+  );
   if (httpMatch) {
     return buildHTTPDiagnosis(parseInt(httpMatch[1]), stderr);
   }
@@ -443,12 +462,14 @@ export async function classifyError(
     autoFixable: false,
     suggestedFixes: [],
     requiresUserInput: true,
-    userQuestion: `执行失败，错误信息：${stderr.slice(0, 200)}。你知道如何解决吗？`,
+    userQuestion: `执行失败，错误信息：${
+      stderr.slice(0, 200)
+    }。你知道如何解决吗？`,
   };
 }
 
 async function buildTimeoutDiagnosis(
-  context: { tool?: string; url?: string }
+  context: { tool?: string; url?: string },
 ): Promise<ErrorDiagnosis> {
   const fixes: Fix[] = [];
 
@@ -504,7 +525,10 @@ function buildDNSDiagnosis(stderr: string): ErrorDiagnosis {
         id: "use_public_dns",
         description: "建议：尝试使用公共 DNS (8.8.8.8 或 114.114.114.114)",
         confidence: 0.5,
-        action: { type: "custom", command: "echo 'nameserver 8.8.8.8' | sudo tee /etc/resolv.conf" },
+        action: {
+          type: "custom",
+          command: "echo 'nameserver 8.8.8.8' | sudo tee /etc/resolv.conf",
+        },
       },
     ],
     requiresUserInput: true,
@@ -522,7 +546,10 @@ function buildSSLDiagnosis(stderr: string): ErrorDiagnosis {
   };
 }
 
-function buildHTTPDiagnosis(statusCode: number, stderr: string): ErrorDiagnosis {
+function buildHTTPDiagnosis(
+  statusCode: number,
+  stderr: string,
+): ErrorDiagnosis {
   const messages: Record<number, string> = {
     401: "需要认证。请提供 API 密钥或登录凭证。",
     403: "访问被禁止。可能需要特殊权限或 VPN。",
@@ -538,11 +565,11 @@ function buildHTTPDiagnosis(statusCode: number, stderr: string): ErrorDiagnosis 
     autoFixable: statusCode >= 500,
     suggestedFixes: statusCode >= 500
       ? [{
-          id: "retry_later",
-          description: "等待 30 秒后重试",
-          confidence: 0.6,
-          action: { type: "retry_with_timeout", timeoutMs: 30000 },
-        }]
+        id: "retry_later",
+        description: "等待 30 秒后重试",
+        confidence: 0.6,
+        action: { type: "retry_with_timeout", timeoutMs: 30000 },
+      }]
       : [],
     requiresUserInput: statusCode < 500,
     userQuestion: messages[statusCode] || `HTTP 错误 ${statusCode}`,
@@ -570,7 +597,7 @@ function buildDiskFullDiagnosis(): ErrorDiagnosis {
 }
 
 async function buildConnectionRefusedDiagnosis(
-  context: { tool?: string }
+  context: { tool?: string },
 ): Promise<ErrorDiagnosis> {
   const fixes: Fix[] = [];
 
@@ -586,7 +613,7 @@ async function buildConnectionRefusedDiagnosis(
   }
 
   return {
-    type: "timeout",  // 连接拒绝通常也是网络问题
+    type: "timeout", // 连接拒绝通常也是网络问题
     autoFixable: fixes.length > 0,
     suggestedFixes: fixes,
     requiresUserInput: fixes.length === 0,
@@ -596,6 +623,7 @@ async function buildConnectionRefusedDiagnosis(
 ```
 
 ### 4. src/utils/diagnostics/retry-policy.ts
+
 ```typescript
 import type { ErrorDiagnosis, Fix } from "../../types/diagnostics.ts";
 
@@ -643,7 +671,7 @@ export function createRetryContext(): RetryContext {
 export function shouldRetry(
   context: RetryContext,
   diagnosis: ErrorDiagnosis,
-  config: RetryConfig = DEFAULT_CONFIG
+  config: RetryConfig = DEFAULT_CONFIG,
 ): { shouldRetry: boolean; nextFix?: Fix; delayMs: number } {
   // 已达最大重试次数
   if (context.attempt >= config.maxAttempts) {
@@ -657,7 +685,7 @@ export function shouldRetry(
 
   // 找到下一个未尝试的修复
   const nextFix = diagnosis.suggestedFixes.find(
-    (fix) => !context.appliedFixes.includes(fix.id)
+    (fix) => !context.appliedFixes.includes(fix.id),
   );
 
   if (!nextFix) {
@@ -667,7 +695,7 @@ export function shouldRetry(
   // 计算延迟（指数退避）
   const delayMs = Math.min(
     config.initialDelayMs * Math.pow(config.backoffMultiplier, context.attempt),
-    config.maxDelayMs
+    config.maxDelayMs,
   );
 
   return { shouldRetry: true, nextFix, delayMs };
@@ -706,7 +734,7 @@ export async function applyFix(fix: Fix): Promise<void> {
 export function updateRetryContext(
   context: RetryContext,
   fix: Fix,
-  durationMs: number
+  durationMs: number,
 ): RetryContext {
   return {
     ...context,
@@ -724,29 +752,33 @@ export function getRetrySummary(context: RetryContext): string {
     return "未进行重试";
   }
 
-  return `已尝试 ${context.attempt} 次，应用的修复: ${context.appliedFixes.join(", ")}`;
+  return `已尝试 ${context.attempt} 次，应用的修复: ${
+    context.appliedFixes.join(", ")
+  }`;
 }
 ```
 
 ### 5. src/utils/diagnostics/mod.ts
+
 ```typescript
-export { diagnoseNetwork, detectProxyConfig } from "./network-diagnostics.ts";
+export { detectProxyConfig, diagnoseNetwork } from "./network-diagnostics.ts";
 export { classifyError } from "./error-classifier.ts";
 export { getMirrors, getPipMirrorEnv } from "./config-detector.ts";
 export {
-  createRetryContext,
-  shouldRetry,
   applyFix,
-  updateRetryContext,
+  createRetryContext,
   getRetrySummary,
   type RetryConfig,
   type RetryContext,
+  shouldRetry,
+  updateRetryContext,
 } from "./retry-policy.ts";
 ```
 
 ## 终点状态（验收标准）
 
 ### 必须满足
+
 - [ ] `diagnoseNetwork()` 能正确检测网络状态
 - [ ] `detectProxyConfig()` 能从环境变量、git 配置、curlrc 中检测代理
 - [ ] `classifyError()` 能正确分类常见错误类型
@@ -754,11 +786,12 @@ export {
 - [ ] `applyFix()` 能正确应用修复动作
 
 ### 测试场景
+
 ```typescript
 // 1. 测试超时错误分类
 const diagnosis = await classifyError(
   "ReadTimeoutError: HTTPSConnectionPool - Read timed out",
-  { tool: "pip" }
+  { tool: "pip" },
 );
 assert(diagnosis.type === "timeout");
 assert(diagnosis.suggestedFixes.length > 0);
@@ -776,6 +809,7 @@ assert(nextFix !== undefined);
 ```
 
 ### 交付物
+
 1. `src/utils/diagnostics/network-diagnostics.ts`
 2. `src/utils/diagnostics/config-detector.ts`
 3. `src/utils/diagnostics/error-classifier.ts`
@@ -783,4 +817,5 @@ assert(nextFix !== undefined);
 5. `src/utils/diagnostics/mod.ts`
 
 ## 预估时间
+
 2 天

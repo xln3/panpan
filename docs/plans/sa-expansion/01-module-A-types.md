@@ -1,20 +1,24 @@
 # 模块 A: 类型定义
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
 本模块定义所有新 SA 的 TypeScript 类型接口，是其他所有模块的基础依赖。
 
 ## 模块职责
+
 - 定义 Logger、Remote、Watcher、PM 四个 SA 的类型
 - 定义诊断相关类型
 - 扩展现有 AgentConfig 接口
 
 ## 依赖关系
+
 - **依赖**: 无（可立即开始）
 - **被依赖**: 所有其他模块
 
 ## 文件结构
+
 ```
 src/types/
 ├── agent.ts         # 修改：扩展 AgentConfig
@@ -28,6 +32,7 @@ src/types/
 ## 详细设计
 
 ### 1. src/types/diagnostics.ts
+
 ```typescript
 /**
  * 网络诊断结果
@@ -68,7 +73,7 @@ export type ErrorType =
 export interface Fix {
   id: string;
   description: string;
-  confidence: number;  // 0-1
+  confidence: number; // 0-1
   action: FixAction;
 }
 
@@ -80,6 +85,7 @@ export type FixAction =
 ```
 
 ### 2. src/types/logger.ts
+
 ```typescript
 /**
  * 日志级别
@@ -185,6 +191,7 @@ export interface LoggerHooks {
 ```
 
 ### 3. src/types/remote.ts
+
 ```typescript
 /**
  * 远程主机配置
@@ -243,7 +250,7 @@ export interface RemoteExecOutput {
   stderr: string;
   exitCode: number;
   durationMs: number;
-  host: string;  // 始终包含主机名，避免混淆
+  host: string; // 始终包含主机名，避免混淆
 }
 
 /**
@@ -252,11 +259,12 @@ export interface RemoteExecOutput {
 export interface RemoteFileInput {
   connectionId: string;
   path: string;
-  content?: string;  // 写入时需要
+  content?: string; // 写入时需要
 }
 ```
 
 ### 4. src/types/watcher.ts
+
 ```typescript
 /**
  * 监控类型
@@ -278,7 +286,7 @@ export interface MonitorConfig {
   id: string;
   type: MonitorType;
   target: "local" | { remote: string };
-  interval: number;  // ms
+  interval: number; // ms
   enabled: boolean;
   customCommand?: string;
   customParser?: string;
@@ -305,7 +313,7 @@ export interface AlertConfig {
   operator: ">" | "<" | ">=" | "<=" | "==";
   threshold: number;
   message: string;
-  cooldown: number;  // ms
+  cooldown: number; // ms
 }
 
 /**
@@ -333,6 +341,7 @@ export interface Monitor {
 ```
 
 ### 5. src/types/pm.ts
+
 ```typescript
 /**
  * 需求定义
@@ -378,7 +387,7 @@ export interface TestCase {
 export interface PMBudget {
   tokenLimit: number;
   tokenUsed: number;
-  timeLimit: number;  // ms
+  timeLimit: number; // ms
   timeUsed: number;
   attemptsLimit: number;
   attemptsUsed: number;
@@ -422,6 +431,7 @@ export interface PMStatusInput {
 ```
 
 ### 6. src/types/agent.ts (修改)
+
 ```typescript
 // 在现有 AgentConfig 接口中添加：
 
@@ -433,21 +443,23 @@ export interface AgentConfig {
   model?: AgentModel;
   systemPrompt: string;
   // === 新增字段 ===
-  persistent?: boolean;           // 跨调用保持状态
+  persistent?: boolean; // 跨调用保持状态
   hasBackgroundServices?: boolean; // 运行后台服务
-  requiresInit?: boolean;         // 使用前需要初始化
+  requiresInit?: boolean; // 使用前需要初始化
 }
 ```
 
 ## 终点状态（验收标准）
 
 ### 必须满足
+
 - [ ] 所有类型文件通过 `deno check` 类型检查
 - [ ] 每个类型都有 JSDoc 注释说明用途
 - [ ] 接口命名清晰，符合项目约定
 - [ ] 没有 `any` 类型（除非有充分理由）
 
 ### 验收命令
+
 ```bash
 # 类型检查
 deno check src/types/diagnostics.ts
@@ -461,6 +473,7 @@ deno check src/types/mod.ts  # 需要创建导出文件
 ```
 
 ### 交付物
+
 1. `src/types/diagnostics.ts` - 诊断相关类型
 2. `src/types/logger.ts` - 日志相关类型
 3. `src/types/remote.ts` - 远程相关类型
@@ -470,4 +483,5 @@ deno check src/types/mod.ts  # 需要创建导出文件
 7. `src/types/mod.ts` - 统一导出
 
 ## 预估时间
+
 0.5 天

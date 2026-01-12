@@ -2,7 +2,7 @@
  * Tests for monitor implementations - GPU, CPU, Memory, Disk, Network
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import { GPUMonitor } from "../../../src/services/watcher/monitors/gpu.ts";
 import { CPUMonitor } from "../../../src/services/watcher/monitors/cpu.ts";
 import { MemoryMonitor } from "../../../src/services/watcher/monitors/memory.ts";

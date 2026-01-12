@@ -62,8 +62,12 @@ export class NetworkMonitor extends BaseMonitor {
     if (this.lastReading) {
       const elapsedSec = (now - this.lastReading.timestamp) / 1000;
       if (elapsedSec > 0) {
-        rxSpeedBps = Math.round((rxBytes - this.lastReading.rxBytes) / elapsedSec);
-        txSpeedBps = Math.round((txBytes - this.lastReading.txBytes) / elapsedSec);
+        rxSpeedBps = Math.round(
+          (rxBytes - this.lastReading.rxBytes) / elapsedSec,
+        );
+        txSpeedBps = Math.round(
+          (txBytes - this.lastReading.txBytes) / elapsedSec,
+        );
 
         // Handle counter wraparound (negative values)
         if (rxSpeedBps < 0) rxSpeedBps = 0;

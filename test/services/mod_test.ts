@@ -3,10 +3,10 @@
  * Tests service initialization and cleanup lifecycle
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import {
-  initializeServices,
   cleanupServices,
+  initializeServices,
   loggerService,
   monitorRegistry,
 } from "../../src/services/mod.ts";

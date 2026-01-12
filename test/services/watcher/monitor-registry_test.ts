@@ -2,12 +2,16 @@
  * Tests for MonitorRegistry - monitor registration and lookup
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import { MonitorRegistry } from "../../../src/services/watcher/monitor-registry.ts";
 import { CPUMonitor } from "../../../src/services/watcher/monitors/cpu.ts";
 import { MemoryMonitor } from "../../../src/services/watcher/monitors/memory.ts";
 import { DiskMonitor } from "../../../src/services/watcher/monitors/disk.ts";
-import type { Monitor, MonitorReading, MonitorType } from "../../../src/types/watcher.ts";
+import type {
+  Monitor,
+  MonitorReading,
+  MonitorType,
+} from "../../../src/types/watcher.ts";
 
 // Mock monitor for testing
 class MockMonitor implements Monitor {
@@ -21,17 +25,17 @@ class MockMonitor implements Monitor {
   }
 
   async isAvailable(): Promise<boolean> {
-    return this.available;
+    return await Promise.resolve(this.available);
   }
 
   async sample(): Promise<MonitorReading> {
-    return {
+    return await Promise.resolve({
       monitorId: "mock-local",
       type: this.type,
       target: "local",
       timestamp: Date.now(),
       values: { testValue: 42 },
-    };
+    });
   }
 
   getCommand(): string {

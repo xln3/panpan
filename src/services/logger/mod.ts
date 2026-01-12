@@ -3,7 +3,11 @@
  */
 
 // Main service
-export { loggerService, LoggerService, type LoggerServiceConfig } from "./logger-service.ts";
+export {
+  LoggerService,
+  loggerService,
+  type LoggerServiceConfig,
+} from "./logger-service.ts";
 
 // Storage
 export { LogStorage, type LogStorageConfig } from "./log-storage.ts";
@@ -13,10 +17,10 @@ export { createLoggerHooks } from "./hooks.ts";
 
 // Summarizer
 export {
+  computeStats,
+  generateOneLiner,
   generateSummary,
   generateTimeline,
-  generateOneLiner,
-  computeStats,
   type LogStats,
 } from "./summarizer.ts";
 

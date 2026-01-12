@@ -2,10 +2,10 @@
  * Tests for mirror-configs module
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import {
-  MIRROR_CONFIGS,
   getMirrorConfig,
+  MIRROR_CONFIGS,
   type PackageManagerTool,
 } from "../../../src/tools/package-managers/mirror-configs.ts";
 
@@ -34,18 +34,28 @@ Deno.test("MIRROR_CONFIGS - conda config generates correct args", () => {
   const config = MIRROR_CONFIGS.conda;
   assertEquals(config.service, "conda");
 
-  const args = config.getMirrorArgs("https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main");
+  const args = config.getMirrorArgs(
+    "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main",
+  );
   assertEquals(args.includes("-c"), true);
   assertEquals(args.includes("--override-channels"), true);
-  assertEquals(args.includes("https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main"), true);
+  assertEquals(
+    args.includes("https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main"),
+    true,
+  );
 });
 
 Deno.test("MIRROR_CONFIGS - pixi config generates correct args", () => {
   const config = MIRROR_CONFIGS.pixi;
   assertEquals(config.service, "conda");
 
-  const args = config.getMirrorArgs("https://mirrors.aliyun.com/anaconda/pkgs/main");
-  assertEquals(args, ["--channel", "https://mirrors.aliyun.com/anaconda/pkgs/main"]);
+  const args = config.getMirrorArgs(
+    "https://mirrors.aliyun.com/anaconda/pkgs/main",
+  );
+  assertEquals(args, [
+    "--channel",
+    "https://mirrors.aliyun.com/anaconda/pkgs/main",
+  ]);
 });
 
 // ============ getMirrorConfig Tests ============
@@ -73,7 +83,9 @@ Deno.test("getMirrorConfig - returns pixi config", () => {
 // ============ Hostname Extraction Tests ============
 
 Deno.test("MIRROR_CONFIGS - pip extracts hostname correctly", () => {
-  const args = MIRROR_CONFIGS.pip.getMirrorArgs("https://pypi.tuna.tsinghua.edu.cn/simple");
+  const args = MIRROR_CONFIGS.pip.getMirrorArgs(
+    "https://pypi.tuna.tsinghua.edu.cn/simple",
+  );
   // --trusted-host should be followed by hostname
   const hostIdx = args.indexOf("--trusted-host");
   assertEquals(args[hostIdx + 1], "pypi.tuna.tsinghua.edu.cn");
@@ -86,7 +98,9 @@ Deno.test("MIRROR_CONFIGS - pip handles URL without path", () => {
 });
 
 Deno.test("MIRROR_CONFIGS - pip handles URL with port", () => {
-  const args = MIRROR_CONFIGS.pip.getMirrorArgs("https://localhost:8080/simple");
+  const args = MIRROR_CONFIGS.pip.getMirrorArgs(
+    "https://localhost:8080/simple",
+  );
   const hostIdx = args.indexOf("--trusted-host");
   assertEquals(args[hostIdx + 1], "localhost");
 });

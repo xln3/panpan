@@ -3,7 +3,7 @@
  * Used by PM SA to manage requirements lifecycle
  */
 
-import type { Requirement, QA } from "../../types/pm.ts";
+import type { Requirement } from "../../types/pm.ts";
 
 /**
  * Manages requirements lifecycle: creation, clarification, and acceptance criteria

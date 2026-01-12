@@ -2,9 +2,9 @@
  * Tests for TestFinder
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { TestFinder } from "../../../src/services/pm/test-finder.ts";
-import { withTempDir, createTempStructure } from "../../_helpers/mod.ts";
+import { createTempStructure, withTempDir } from "../../_helpers/mod.ts";
 
 Deno.test("TestFinder - findTests returns empty array when no tests", async () => {
   await withTempDir(async (dir) => {

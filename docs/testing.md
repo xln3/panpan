@@ -95,7 +95,7 @@ assertEquals(results.length, 3);
 在临时目录中运行测试，自动清理：
 
 ```typescript
-import { withTempDir, createTempStructure } from "../_helpers/mod.ts";
+import { createTempStructure, withTempDir } from "../_helpers/mod.ts";
 
 Deno.test("file operation test", async () => {
   await withTempDir(async (dir) => {
@@ -197,18 +197,18 @@ Deno.test("config priority", () => {
 
 ## 测试覆盖模块
 
-| 模块 | 文件 | 测试数量 | 覆盖内容 |
-|------|------|---------|----------|
-| config | config_test.ts | 25 | 配置优先级、验证 |
-| core/messages | messages_test.ts | 23 | 消息创建、规范化、orphan 清理 |
-| core/tool-executor | tool-executor_test.ts | 13 | 并发控制、schema 验证、abort |
-| llm/provider-factory | provider-factory_test.ts | 17 | Provider 检测、创建 |
-| llm/stream-parser | stream-parser_test.ts | 19 | SSE 解析、tool call 累积 |
-| tools/file-read | file-read_test.ts | 22 | 读取、offset/limit、时间戳 |
-| tools/glob | glob_test.ts | 18 | 模式匹配、截断、验证 |
-| tools/grep | grep_test.ts | 20 | 正则匹配、输出模式、上下文 |
-| utils/plan-mode | plan-mode_test.ts | 25 | 状态管理、权限检查 |
-| utils/todo-storage | todo-storage_test.ts | 25+ | Todo CRUD、验证、渲染 |
+| 模块                 | 文件                     | 测试数量 | 覆盖内容                      |
+| -------------------- | ------------------------ | -------- | ----------------------------- |
+| config               | config_test.ts           | 25       | 配置优先级、验证              |
+| core/messages        | messages_test.ts         | 23       | 消息创建、规范化、orphan 清理 |
+| core/tool-executor   | tool-executor_test.ts    | 13       | 并发控制、schema 验证、abort  |
+| llm/provider-factory | provider-factory_test.ts | 17       | Provider 检测、创建           |
+| llm/stream-parser    | stream-parser_test.ts    | 19       | SSE 解析、tool call 累积      |
+| tools/file-read      | file-read_test.ts        | 22       | 读取、offset/limit、时间戳    |
+| tools/glob           | glob_test.ts             | 18       | 模式匹配、截断、验证          |
+| tools/grep           | grep_test.ts             | 20       | 正则匹配、输出模式、上下文    |
+| utils/plan-mode      | plan-mode_test.ts        | 25       | 状态管理、权限检查            |
+| utils/todo-storage   | todo-storage_test.ts     | 25+      | Todo CRUD、验证、渲染         |
 
 ## 添加新测试
 

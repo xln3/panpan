@@ -3,7 +3,10 @@
  */
 
 import type { LLMClient } from "../../src/llm/client.ts";
-import type { InternalMessage, CompletionResponse } from "../../src/types/provider.ts";
+import type {
+  CompletionResponse,
+  InternalMessage,
+} from "../../src/types/provider.ts";
 import type { Tool } from "../../src/types/tool.ts";
 
 type ResponseProvider =
@@ -39,14 +42,14 @@ export function createMockLLMClient(
       calls.push({ messages, systemPrompt, tools });
 
       if (typeof responses === "function") {
-        return responses(messages);
+        return await Promise.resolve(responses(messages));
       }
 
       const response = responses[callIndex++];
       if (!response) {
-        return responses[responses.length - 1];
+        return await Promise.resolve(responses[responses.length - 1]);
       }
-      return response;
+      return await Promise.resolve(response);
     },
     providerType: "openai" as const,
 
@@ -81,7 +84,9 @@ export function createTextResponse(
  * Create a tool use response
  */
 export function createToolUseResponse(
-  toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>,
+  toolCalls: Array<
+    { id: string; name: string; input: Record<string, unknown> }
+  >,
   options: Partial<CompletionResponse> = {},
 ): CompletionResponse {
   return {

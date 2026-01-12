@@ -2,7 +2,7 @@
  * Tests for BudgetTracker
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "jsr:@std/assert@1";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { BudgetTracker } from "../../../src/services/pm/budget-tracker.ts";
 
 Deno.test("BudgetTracker - initializes with config", () => {

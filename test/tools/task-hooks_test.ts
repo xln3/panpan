@@ -7,7 +7,7 @@
  * verifying logs are created.
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { loggerService } from "../../src/services/mod.ts";
 
 // =============================================================================
@@ -29,8 +29,16 @@ Deno.test("SA hooks - loggerService exports getHooks method", () => {
   const hooks = loggerService.getHooks();
 
   // Verify SA-specific hooks exist
-  assertEquals(typeof hooks.onSAInvoke, "function", "Should have onSAInvoke hook");
-  assertEquals(typeof hooks.onSAComplete, "function", "Should have onSAComplete hook");
+  assertEquals(
+    typeof hooks.onSAInvoke,
+    "function",
+    "Should have onSAInvoke hook",
+  );
+  assertEquals(
+    typeof hooks.onSAComplete,
+    "function",
+    "Should have onSAComplete hook",
+  );
 
   loggerService.reset();
 });
@@ -53,7 +61,7 @@ Deno.test("SA hooks - onSAInvoke logs sa_invoke event", () => {
   assertEquals(
     (invokeLog.data as { agentType?: string })?.agentType,
     "TestAgent",
-    "Should log agent type"
+    "Should log agent type",
   );
 
   loggerService.reset();
@@ -65,7 +73,10 @@ Deno.test("SA hooks - onSAComplete logs sa_result event", () => {
   const hooks = loggerService.getHooks();
 
   // Manually call the hook to verify it logs correctly
-  hooks.onSAComplete("TestAgent", "Agent completed successfully with this result");
+  hooks.onSAComplete(
+    "TestAgent",
+    "Agent completed successfully with this result",
+  );
 
   const logs = loggerService.getAll();
   const saResultLogs = logs.filter((log) => log.type === "sa_result");
@@ -77,12 +88,12 @@ Deno.test("SA hooks - onSAComplete logs sa_result event", () => {
   assertEquals(
     (resultLog.data as { agentType?: string })?.agentType,
     "TestAgent",
-    "Should log agent type"
+    "Should log agent type",
   );
   assertEquals(
     (resultLog.data as { resultLength?: number })?.resultLength,
     "Agent completed successfully with this result".length,
-    "Should log result length"
+    "Should log result length",
   );
 
   loggerService.reset();
@@ -98,10 +109,14 @@ Deno.test("SA hooks - onSAInvoke logs at summary level", () => {
 
   const logs = loggerService.getAll();
   const summaryLogs = logs.filter(
-    (log) => log.level === "summary" && log.type === "sa_invoke"
+    (log) => log.level === "summary" && log.type === "sa_invoke",
   );
 
-  assertEquals(summaryLogs.length > 0, true, "Should log SA invoke at summary level");
+  assertEquals(
+    summaryLogs.length > 0,
+    true,
+    "Should log SA invoke at summary level",
+  );
 
   loggerService.reset();
 });
@@ -120,14 +135,18 @@ Deno.test("SA hooks - tool level logs include more detail", () => {
   // At tool level, should have both invoke and result logs
   const toolLevelLogs = logs.filter((log) => log.level === "tool");
 
-  assertEquals(toolLevelLogs.length >= 2, true, "Should have tool level logs for invoke and complete");
+  assertEquals(
+    toolLevelLogs.length >= 2,
+    true,
+    "Should have tool level logs for invoke and complete",
+  );
 
   // Invoke log should have prompt length
   const invokeLog = toolLevelLogs.find((log) => log.type === "sa_invoke");
   assertEquals(
     (invokeLog?.data as { promptLength?: number })?.promptLength,
     "Design implementation for feature X".length,
-    "Should include prompt length"
+    "Should include prompt length",
   );
 
   loggerService.reset();
@@ -148,7 +167,11 @@ Deno.test("SA hooks - error logging via onToolError", () => {
 
   // Verify error details
   const errorLog = errorLogs[0];
-  assertEquals(errorLog.error?.includes("Connection timeout"), true, "Should include error message");
+  assertEquals(
+    errorLog.error?.includes("Connection timeout"),
+    true,
+    "Should include error message",
+  );
 
   loggerService.reset();
 });
@@ -161,33 +184,33 @@ Deno.test("SA hooks - task.ts source contains loggerService import", async () =>
   // Read the source file and verify it imports and uses loggerService
   // This is a static check that doesn't require loading the module (which has heavy deps)
   const sourceCode = await Deno.readTextFile(
-    new URL("../../src/tools/task.ts", import.meta.url)
+    new URL("../../src/tools/task.ts", import.meta.url),
   );
 
   // Verify import statement exists
   assertEquals(
     sourceCode.includes('import { loggerService } from "../services/mod.ts"'),
     true,
-    "Should import loggerService from services/mod.ts"
+    "Should import loggerService from services/mod.ts",
   );
 
   // Verify hooks are used
   assertEquals(
     sourceCode.includes("loggerService.getHooks()"),
     true,
-    "Should call loggerService.getHooks()"
+    "Should call loggerService.getHooks()",
   );
 
   // Verify SA hooks are called
   assertEquals(
     sourceCode.includes("hooks.onSAInvoke"),
     true,
-    "Should call hooks.onSAInvoke"
+    "Should call hooks.onSAInvoke",
   );
 
   assertEquals(
     sourceCode.includes("hooks.onSAComplete"),
     true,
-    "Should call hooks.onSAComplete"
+    "Should call hooks.onSAComplete",
   );
 });

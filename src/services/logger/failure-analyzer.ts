@@ -2,7 +2,7 @@
  * Failure analyzer - identifies failure points and suggests fixes.
  */
 
-import type { LogEntry, FailurePoint } from "../../types/logger.ts";
+import type { FailurePoint, LogEntry } from "../../types/logger.ts";
 
 /**
  * Analyze log entries to identify failure points
@@ -74,19 +74,28 @@ function suggestFixes(entry: LogEntry): string[] {
   }
 
   // Permission errors
-  if (error.includes("permission") || error.includes("access denied") || error.includes("eacces")) {
+  if (
+    error.includes("permission") || error.includes("access denied") ||
+    error.includes("eacces")
+  ) {
     fixes.push("检查文件/目录权限");
     fixes.push("尝试使用 sudo");
   }
 
   // Not found errors
-  if (error.includes("not found") || error.includes("no such file") || error.includes("enoent")) {
+  if (
+    error.includes("not found") || error.includes("no such file") ||
+    error.includes("enoent")
+  ) {
     fixes.push("检查路径是否正确");
     fixes.push("确认依赖已安装");
   }
 
   // Disk space errors
-  if (error.includes("disk") || error.includes("space") || error.includes("enospc")) {
+  if (
+    error.includes("disk") || error.includes("space") ||
+    error.includes("enospc")
+  ) {
     fixes.push("清理磁盘空间");
     fixes.push("检查磁盘配额");
   }
@@ -98,7 +107,10 @@ function suggestFixes(entry: LogEntry): string[] {
   }
 
   // SSL/TLS errors
-  if (error.includes("ssl") || error.includes("certificate") || error.includes("tls")) {
+  if (
+    error.includes("ssl") || error.includes("certificate") ||
+    error.includes("tls")
+  ) {
     fixes.push("检查系统时间是否正确");
     fixes.push("更新 CA 证书");
   }
@@ -106,7 +118,9 @@ function suggestFixes(entry: LogEntry): string[] {
   // Tool-specific suggestions
   const toolName = data?.toolName as string;
   if (toolName === "Pip" || toolName === "pip") {
-    fixes.push("尝试使用清华镜像源: pip install -i https://pypi.tuna.tsinghua.edu.cn/simple");
+    fixes.push(
+      "尝试使用清华镜像源: pip install -i https://pypi.tuna.tsinghua.edu.cn/simple",
+    );
     fixes.push("检查 Python 环境是否正确激活");
   }
 
@@ -128,7 +142,7 @@ function suggestFixes(entry: LogEntry): string[] {
  */
 export function findAlternativeRoutes(
   failures: FailurePoint[],
-  _allEntries: LogEntry[]
+  _allEntries: LogEntry[],
 ): string[] {
   const alternatives: string[] = [];
 
@@ -144,7 +158,10 @@ export function findAlternativeRoutes(
   for (const [type, count] of failureTypes) {
     const typeLower = type.toLowerCase();
 
-    if (typeLower.includes("network") || typeLower.includes("timeout") || typeLower.includes("connection")) {
+    if (
+      typeLower.includes("network") || typeLower.includes("timeout") ||
+      typeLower.includes("connection")
+    ) {
       alternatives.push("网络问题频繁，建议先解决网络配置（代理/VPN/镜像）");
     }
 
@@ -157,7 +174,9 @@ export function findAlternativeRoutes(
     }
 
     if (count >= 3) {
-      alternatives.push(`"${type.split(":")[0]}" 失败 ${count} 次，可能需要换一种方法`);
+      alternatives.push(
+        `"${type.split(":")[0]}" 失败 ${count} 次，可能需要换一种方法`,
+      );
     }
   }
 

@@ -42,8 +42,12 @@
  */
 
 // Registry and manager singletons
-export { monitorRegistry, MonitorRegistry } from "./monitor-registry.ts";
-export { alertManager, AlertManager, type AlertListener } from "./alert-manager.ts";
+export { MonitorRegistry, monitorRegistry } from "./monitor-registry.ts";
+export {
+  type AlertListener,
+  AlertManager,
+  alertManager,
+} from "./alert-manager.ts";
 
 // Base class for custom monitors
 export { BaseMonitor } from "./monitors/base.ts";

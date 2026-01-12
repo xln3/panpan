@@ -2,7 +2,7 @@
  * Tests for src/llm/provider-factory.ts
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import {
   createProvider,
   createProviderByType,

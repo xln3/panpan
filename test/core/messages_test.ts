@@ -2,7 +2,7 @@
  * Tests for src/core/messages.ts
  */
 
-import { assertEquals, assertNotEquals } from "jsr:@std/assert@1";
+import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   createAssistantMessage,
   createProgressMessage,
@@ -119,7 +119,10 @@ Deno.test("createTextAssistantMessage - creates simple text message", () => {
   assertEquals(msg.type, "assistant");
   assertEquals(msg.message.content.length, 1);
   assertEquals(msg.message.content[0].type, "text");
-  assertEquals((msg.message.content[0] as { text: string }).text, "Simple response");
+  assertEquals(
+    (msg.message.content[0] as { text: string }).text,
+    "Simple response",
+  );
   assertEquals(msg.costUSD, 0);
   assertEquals(msg.durationMs, 0);
 });
@@ -324,7 +327,10 @@ Deno.test("normalizeMessagesForAPI - adds dummy error results for partial tool r
   const dummyContent = dummyUser.content as ContentBlock[];
   assertEquals(dummyContent.length, 1);
   assertEquals(dummyContent[0].type, "tool_result");
-  assertEquals((dummyContent[0] as { tool_use_id: string }).tool_use_id, "tool-2");
+  assertEquals(
+    (dummyContent[0] as { tool_use_id: string }).tool_use_id,
+    "tool-2",
+  );
   assertEquals((dummyContent[0] as { is_error?: boolean }).is_error, true);
 });
 

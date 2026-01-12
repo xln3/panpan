@@ -2,8 +2,12 @@
  * Tests for src/config/config.ts
  */
 
-import { assertEquals, assertThrows } from "jsr:@std/assert@1";
-import { loadConfig, validateConfig, type Config } from "../../src/config/config.ts";
+import { assertEquals, assertThrows } from "@std/assert";
+import {
+  type Config,
+  loadConfig,
+  validateConfig,
+} from "../../src/config/config.ts";
 
 // =============================================================================
 // Helper to mock environment variables
@@ -51,10 +55,13 @@ Deno.test("loadConfig - CLI apiKey takes priority", () => {
 });
 
 Deno.test("loadConfig - falls back to PANPAN_API_KEY", () => {
-  withEnv({ PANPAN_API_KEY: "panpan-key", OPENAI_API_KEY: "openai-key" }, () => {
-    const config = loadConfig({});
-    assertEquals(config.apiKey, "panpan-key");
-  });
+  withEnv(
+    { PANPAN_API_KEY: "panpan-key", OPENAI_API_KEY: "openai-key" },
+    () => {
+      const config = loadConfig({});
+      assertEquals(config.apiKey, "panpan-key");
+    },
+  );
 });
 
 Deno.test("loadConfig - falls back to OPENAI_API_KEY", () => {

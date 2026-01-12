@@ -1,22 +1,26 @@
 # 模块 F: PM 服务
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
 本模块实现 PMSA 的核心服务层，负责需求澄清、测试计划、验收循环和预算追踪。
 
 ## 设计要点
+
 - **需求澄清**: 通过问答确认需求，排除歧义
 - **测试计划**: 生成或查找测试模板
 - **验收循环**: 自动重试 + 智能切换方案
 - **预算追踪**: Token/时间限制，达到后通知
 
 ## 依赖关系
+
 - **依赖**: 无（可立即开始）
 - **类型依赖**: `src/types/pm.ts`
 - **被依赖**: Sprint 2 的 tools/pm (J)
 
 ## 文件结构
+
 ```
 src/services/pm/
 ├── mod.ts               # 统一导出
@@ -30,8 +34,9 @@ src/services/pm/
 ## 详细设计
 
 ### 1. src/services/pm/requirements.ts
+
 ```typescript
-import type { Requirement, QA } from "../../types/pm.ts";
+import type { QA, Requirement } from "../../types/pm.ts";
 
 /**
  * 需求管理器
@@ -119,9 +124,15 @@ export class RequirementsManager {
 
     // 检测模糊词汇
     const vagueTerms = [
-      { term: "快", question: "请具体说明 '快' 的标准是什么？（例如：响应时间 < 100ms）" },
+      {
+        term: "快",
+        question: "请具体说明 '快' 的标准是什么？（例如：响应时间 < 100ms）",
+      },
       { term: "好", question: "请具体说明 '好' 的标准是什么？" },
-      { term: "优化", question: "请说明优化的目标指标是什么？（例如：性能、内存、代码质量）" },
+      {
+        term: "优化",
+        question: "请说明优化的目标指标是什么？（例如：性能、内存、代码质量）",
+      },
       { term: "改进", question: "请说明具体需要改进哪些方面？" },
       { term: "简单", question: "请说明 '简单' 是指代码简洁还是使用简单？" },
       { term: "安全", question: "请说明需要防范哪些安全威胁？" },
@@ -138,7 +149,10 @@ export class RequirementsManager {
       questions.push("是否需要编写测试？测试覆盖率要求是多少？");
     }
 
-    if (!text.includes("错误") && !text.includes("error") && !text.includes("异常")) {
+    if (
+      !text.includes("错误") && !text.includes("error") &&
+      !text.includes("异常")
+    ) {
       questions.push("错误情况应该如何处理？");
     }
 
@@ -191,6 +205,7 @@ export const requirementsManager = new RequirementsManager();
 ```
 
 ### 2. src/services/pm/test-finder.ts
+
 ```typescript
 import type { TestCase } from "../../types/pm.ts";
 
@@ -203,7 +218,7 @@ export class TestFinder {
    */
   async findTests(
     keyword: string,
-    cwd: string = Deno.cwd()
+    cwd: string = Deno.cwd(),
   ): Promise<TestCase[]> {
     const tests: TestCase[] = [];
 
@@ -264,7 +279,10 @@ export class TestFinder {
         if (entry.isFile && regex.test(entry.name)) {
           results.push(`${dir}/${entry.name}`);
         } else if (entry.isDirectory) {
-          const subResults = await this.globFiles(`${dir}/${entry.name}`, pattern);
+          const subResults = await this.globFiles(
+            `${dir}/${entry.name}`,
+            pattern,
+          );
           results.push(...subResults);
         }
       }
@@ -289,7 +307,10 @@ export class TestFinder {
   /**
    * 检查测试文件是否包含特定关键词
    */
-  async checkTestContent(testPath: string, keywords: string[]): Promise<boolean> {
+  async checkTestContent(
+    testPath: string,
+    keywords: string[],
+  ): Promise<boolean> {
     try {
       const content = await Deno.readTextFile(testPath);
       const contentLower = content.toLowerCase();
@@ -306,8 +327,9 @@ export const testFinder = new TestFinder();
 ```
 
 ### 3. src/services/pm/test-generator.ts
+
 ```typescript
-import type { TestCase, Requirement } from "../../types/pm.ts";
+import type { Requirement, TestCase } from "../../types/pm.ts";
 
 /**
  * 测试模板类型
@@ -323,7 +345,7 @@ export class TestGenerator {
    */
   generateTestTemplate(
     requirement: Requirement,
-    framework: TestFramework = "deno"
+    framework: TestFramework = "deno",
   ): TestCase {
     const template = this.getTemplate(framework, requirement);
 
@@ -339,7 +361,10 @@ export class TestGenerator {
   /**
    * 获取测试模板
    */
-  private getTemplate(framework: TestFramework, requirement: Requirement): string {
+  private getTemplate(
+    framework: TestFramework,
+    requirement: Requirement,
+  ): string {
     const { clarified, acceptance } = requirement;
 
     switch (framework) {
@@ -461,6 +486,7 @@ export const testGenerator = new TestGenerator();
 ```
 
 ### 4. src/services/pm/budget-tracker.ts
+
 ```typescript
 import type { PMBudget } from "../../types/pm.ts";
 
@@ -485,7 +511,7 @@ export class BudgetTracker {
 
   constructor(limits: {
     tokenLimit: number;
-    timeLimit: number;  // ms
+    timeLimit: number; // ms
     attemptsLimit: number;
   }) {
     this.budget = {
@@ -546,9 +572,15 @@ export class BudgetTracker {
     this.updateTime();
     return {
       ...this.budget,
-      tokenPercent: Math.round((this.budget.tokenUsed / this.budget.tokenLimit) * 100),
-      timePercent: Math.round((this.budget.timeUsed / this.budget.timeLimit) * 100),
-      attemptsPercent: Math.round((this.budget.attemptsUsed / this.budget.attemptsLimit) * 100),
+      tokenPercent: Math.round(
+        (this.budget.tokenUsed / this.budget.tokenLimit) * 100,
+      ),
+      timePercent: Math.round(
+        (this.budget.timeUsed / this.budget.timeLimit) * 100,
+      ),
+      attemptsPercent: Math.round(
+        (this.budget.attemptsUsed / this.budget.attemptsLimit) * 100,
+      ),
     };
   }
 
@@ -619,7 +651,9 @@ export class BudgetTracker {
 | 类型 | 已用 | 限制 | 百分比 |
 |------|------|------|--------|
 | Token | ${status.tokenUsed} | ${status.tokenLimit} | ${status.tokenPercent}% |
-| 时间 | ${Math.round(status.timeUsed / 1000)}s | ${Math.round(status.timeLimit / 1000)}s | ${status.timePercent}% |
+| 时间 | ${Math.round(status.timeUsed / 1000)}s | ${
+      Math.round(status.timeLimit / 1000)
+    }s | ${status.timePercent}% |
 | 尝试 | ${status.attemptsUsed} | ${status.attemptsLimit} | ${status.attemptsPercent}% |
 `;
   }
@@ -627,8 +661,9 @@ export class BudgetTracker {
 ```
 
 ### 5. src/services/pm/verification.ts
+
 ```typescript
-import type { TestCase, Requirement, AlternativePlan } from "../../types/pm.ts";
+import type { AlternativePlan, Requirement, TestCase } from "../../types/pm.ts";
 import { BudgetTracker } from "./budget-tracker.ts";
 
 /**
@@ -661,7 +696,9 @@ export class VerificationLoop {
    */
   setAlternatives(alternatives: AlternativePlan[]): void {
     // 按置信度排序
-    this.alternatives = alternatives.sort((a, b) => b.confidence - a.confidence);
+    this.alternatives = alternatives.sort((a, b) =>
+      b.confidence - a.confidence
+    );
     this.currentAlternativeIndex = 0;
   }
 
@@ -753,7 +790,7 @@ export class VerificationLoop {
    */
   async *verifyWithRetry(
     tests: TestCase[],
-    onPlanSwitch: (plan: AlternativePlan) => Promise<void>
+    onPlanSwitch: (plan: AlternativePlan) => Promise<void>,
   ): AsyncGenerator<{
     type: "attempt" | "switch" | "success" | "budget_exceeded";
     data: unknown;
@@ -829,17 +866,23 @@ export class VerificationLoop {
 ```
 
 ### 6. src/services/pm/mod.ts
+
 ```typescript
-export { requirementsManager, RequirementsManager } from "./requirements.ts";
-export { testFinder, TestFinder } from "./test-finder.ts";
-export { testGenerator, TestGenerator } from "./test-generator.ts";
-export { BudgetTracker, type BudgetEvent, type BudgetListener } from "./budget-tracker.ts";
+export { RequirementsManager, requirementsManager } from "./requirements.ts";
+export { TestFinder, testFinder } from "./test-finder.ts";
+export { TestGenerator, testGenerator } from "./test-generator.ts";
+export {
+  type BudgetEvent,
+  type BudgetListener,
+  BudgetTracker,
+} from "./budget-tracker.ts";
 export { VerificationLoop, type VerificationResult } from "./verification.ts";
 ```
 
 ## 终点状态（验收标准）
 
 ### 必须满足
+
 - [ ] 能创建和管理需求
 - [ ] 能生成澄清问题和提取验收标准
 - [ ] 能查找现有测试文件
@@ -848,12 +891,13 @@ export { VerificationLoop, type VerificationResult } from "./verification.ts";
 - [ ] 验收循环能自动重试和切换方案
 
 ### 测试场景
+
 ```typescript
 // 1. 需求管理
 const req = requirementsManager.create("实现一个快速的缓存功能");
 const questions = requirementsManager.generateClarifyingQuestions(req);
 assert(questions.length > 0);
-assert(questions.some(q => q.includes("快")));  // 检测到模糊词
+assert(questions.some((q) => q.includes("快"))); // 检测到模糊词
 
 // 2. 测试查找
 const tests = await testFinder.findTests("cache", Deno.cwd());
@@ -867,7 +911,7 @@ assert(testCase.template.includes("Test:"));
 // 4. 预算追踪
 const tracker = new BudgetTracker({
   tokenLimit: 10000,
-  timeLimit: 300000,  // 5 分钟
+  timeLimit: 300000, // 5 分钟
   attemptsLimit: 3,
 });
 
@@ -886,14 +930,17 @@ loop.setAlternatives([
   { id: "2", description: "方案B", confidence: 0.6 },
 ]);
 
-for await (const event of loop.verifyWithRetry([], async (plan) => {
-  console.log(`切换到方案: ${plan.description}`);
-})) {
+for await (
+  const event of loop.verifyWithRetry([], async (plan) => {
+    console.log(`切换到方案: ${plan.description}`);
+  })
+) {
   console.log(event);
 }
 ```
 
 ### 交付物
+
 1. `src/services/pm/requirements.ts` - 需求管理
 2. `src/services/pm/test-finder.ts` - 测试查找
 3. `src/services/pm/test-generator.ts` - 测试生成
@@ -902,4 +949,5 @@ for await (const event of loop.verifyWithRetry([], async (plan) => {
 6. `src/services/pm/mod.ts` - 统一导出
 
 ## 预估时间
+
 3 天

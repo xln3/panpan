@@ -2,7 +2,7 @@
  * Tests for src/tools/file-read.ts
  */
 
-import { assertEquals, assertNotEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { FileReadTool } from "../../src/tools/file-read.ts";
 import {
   collectGenerator,
@@ -33,7 +33,10 @@ async function runFileRead(
   cwd: string,
   timestamps: Record<string, number> = {},
 ): Promise<{ output: FileReadOutput; timestamps: Record<string, number> }> {
-  const context = createMockToolContext({ cwd, readFileTimestamps: timestamps });
+  const context = createMockToolContext({
+    cwd,
+    readFileTimestamps: timestamps,
+  });
   const results = await collectGenerator(FileReadTool.call(input, context));
   const result = results[0] as ToolYield<FileReadOutput>;
   const output = result.type === "result"
@@ -50,7 +53,10 @@ Deno.test("FileReadTool - reads file content", async () => {
   await withTempDir(async (dir) => {
     await createTempFile(dir, "test.txt", "Hello, world!");
 
-    const { output } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output } = await runFileRead(
+      { file_path: join(dir, "test.txt") },
+      dir,
+    );
 
     assertEquals(output.content.includes("Hello, world!"), true);
     assertEquals(output.lineCount, 1);
@@ -61,7 +67,10 @@ Deno.test("FileReadTool - adds line numbers", async () => {
   await withTempDir(async (dir) => {
     await createTempFile(dir, "test.txt", "line1\nline2\nline3");
 
-    const { output } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output } = await runFileRead(
+      { file_path: join(dir, "test.txt") },
+      dir,
+    );
 
     assertEquals(output.content.includes("1\t"), true);
     assertEquals(output.content.includes("2\t"), true);
@@ -73,7 +82,10 @@ Deno.test("FileReadTool - formats line numbers with padding", async () => {
   await withTempDir(async (dir) => {
     await createTempFile(dir, "test.txt", "line1\nline2");
 
-    const { output } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output } = await runFileRead(
+      { file_path: join(dir, "test.txt") },
+      dir,
+    );
 
     // Line numbers should be right-padded to 6 chars
     const lines = output.content.split("\n");
@@ -141,10 +153,15 @@ Deno.test("FileReadTool - handles offset and limit together", async () => {
 Deno.test("FileReadTool - defaults to MAX_LINES (2000)", async () => {
   await withTempDir(async (dir) => {
     // Create a file with more than 2000 lines
-    const lines = Array.from({ length: 2100 }, (_, i) => `line${i + 1}`).join("\n");
+    const lines = Array.from({ length: 2100 }, (_, i) => `line${i + 1}`).join(
+      "\n",
+    );
     await createTempFile(dir, "test.txt", lines);
 
-    const { output } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output } = await runFileRead(
+      { file_path: join(dir, "test.txt") },
+      dir,
+    );
 
     assertEquals(output.lineCount, 2000);
     assertEquals(output.truncated, true);
@@ -160,7 +177,10 @@ Deno.test("FileReadTool - truncates long lines", async () => {
     const longLine = "x".repeat(3000);
     await createTempFile(dir, "test.txt", longLine);
 
-    const { output } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output } = await runFileRead(
+      { file_path: join(dir, "test.txt") },
+      dir,
+    );
 
     // Line should be truncated to MAX_LINE_LENGTH (2000) + "..."
     const contentLine = output.content.split("\t")[1];
@@ -326,7 +346,10 @@ Deno.test("FileReadTool - handles file with no newline at end", async () => {
   await withTempDir(async (dir) => {
     await createTempFile(dir, "test.txt", "no newline");
 
-    const { output } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output } = await runFileRead(
+      { file_path: join(dir, "test.txt") },
+      dir,
+    );
 
     assertEquals(output.lineCount, 1);
   });
@@ -336,7 +359,10 @@ Deno.test("FileReadTool - handles empty file", async () => {
   await withTempDir(async (dir) => {
     await createTempFile(dir, "test.txt", "");
 
-    const { output } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output } = await runFileRead(
+      { file_path: join(dir, "test.txt") },
+      dir,
+    );
 
     assertEquals(output.lineCount, 1); // Empty string split gives [""]
   });
@@ -347,7 +373,9 @@ Deno.test("FileReadTool - truncated flag reflects actual state", async () => {
     await createTempFile(dir, "test.txt", "line1\nline2\nline3");
 
     // Read all lines - not truncated
-    const { output: full } = await runFileRead({ file_path: join(dir, "test.txt") }, dir);
+    const { output: full } = await runFileRead({
+      file_path: join(dir, "test.txt"),
+    }, dir);
     assertEquals(full.truncated, false);
 
     // Read with limit - truncated

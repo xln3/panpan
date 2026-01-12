@@ -22,16 +22,25 @@ import type { LogLevel } from "../types/logger.ts";
 // === Service singleton re-exports ===
 
 // Logger service
-export { loggerService, LoggerService } from "./logger/mod.ts";
+export { LoggerService, loggerService } from "./logger/mod.ts";
 
 // Remote connection service
-export { connectionManager, ConnectionManager } from "./remote/mod.ts";
+export { ConnectionManager, connectionManager } from "./remote/mod.ts";
 
 // Watcher service
-export { monitorRegistry, MonitorRegistry, alertManager, AlertManager } from "./watcher/mod.ts";
+export {
+  AlertManager,
+  alertManager,
+  MonitorRegistry,
+  monitorRegistry,
+} from "./watcher/mod.ts";
 
 // System reminder service
-export { systemReminderService, emitReminderEvent, getReminderContents } from "./system-reminder.ts";
+export {
+  emitReminderEvent,
+  getReminderContents,
+  systemReminderService,
+} from "./system-reminder.ts";
 
 // === Service initialization config ===
 

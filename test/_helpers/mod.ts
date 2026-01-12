@@ -13,8 +13,8 @@ export {
   createTempDir,
   createTempFile,
   createTempStructure,
-  withTempDir,
   type TempStructure,
+  withTempDir,
 } from "./temp-dir.ts";
 
 export {

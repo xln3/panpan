@@ -36,10 +36,7 @@
  */
 
 // Connection management
-export {
-  connectionManager,
-  ConnectionManager,
-} from "./connection-manager.ts";
+export { ConnectionManager, connectionManager } from "./connection-manager.ts";
 
 // Daemon client
 export {
@@ -57,7 +54,4 @@ export {
 } from "./ssh-bootstrap.ts";
 
 // Daemon binary
-export {
-  DAEMON_SOURCE,
-  DAEMON_VERSION,
-} from "./daemon-binary.ts";
+export { DAEMON_SOURCE, DAEMON_VERSION } from "./daemon-binary.ts";

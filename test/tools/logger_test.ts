@@ -2,17 +2,24 @@
  * Tests for Logger Tools
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "jsr:@std/assert@1";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { LoggerConfigTool } from "../../src/tools/logger/logger-config.ts";
 import { LoggerQueryTool } from "../../src/tools/logger/logger-query.ts";
-import { LoggerExportTool, LoggerClearTool } from "../../src/tools/logger/logger-export.ts";
+import {
+  LoggerClearTool,
+  LoggerExportTool,
+} from "../../src/tools/logger/logger-export.ts";
 import { loggerService } from "../../src/services/logger/mod.ts";
-import { collectGenerator, createMockToolContext, withTempDir } from "../_helpers/mod.ts";
+import {
+  collectGenerator,
+  createMockToolContext,
+  withTempDir,
+} from "../_helpers/mod.ts";
 import type { ToolYield } from "../../src/types/tool.ts";
 
 // Type helper
 function getResultData<T>(results: ToolYield<T>[]): T {
-  const result = results.find(r => r.type === "result");
+  const result = results.find((r) => r.type === "result");
   if (!result || result.type !== "result") {
     throw new Error("Expected result type");
   }
@@ -83,7 +90,10 @@ Deno.test("LoggerQueryTool - summary format returns stats", async () => {
   const context = createMockToolContext();
 
   const results = await collectGenerator(
-    LoggerQueryTool.call({ format: "summary", limit: 50, failures_only: false }, context),
+    LoggerQueryTool.call(
+      { format: "summary", limit: 50, failures_only: false },
+      context,
+    ),
   );
 
   const data = getResultData(results);
@@ -96,7 +106,11 @@ Deno.test("LoggerQueryTool - timeline format returns chronological view", async 
   const context = createMockToolContext();
 
   const results = await collectGenerator(
-    LoggerQueryTool.call({ format: "timeline", limit: 50, failures_only: false }, context),
+    LoggerQueryTool.call({
+      format: "timeline",
+      limit: 50,
+      failures_only: false,
+    }, context),
   );
 
   const data = getResultData(results);
@@ -109,7 +123,11 @@ Deno.test("LoggerQueryTool - oneliner format returns brief summary", async () =>
   const context = createMockToolContext();
 
   const results = await collectGenerator(
-    LoggerQueryTool.call({ format: "oneliner", limit: 50, failures_only: false }, context),
+    LoggerQueryTool.call({
+      format: "oneliner",
+      limit: 50,
+      failures_only: false,
+    }, context),
   );
 
   const data = getResultData(results);
@@ -122,7 +140,11 @@ Deno.test("LoggerQueryTool - failures format analyzes errors", async () => {
   const context = createMockToolContext();
 
   const results = await collectGenerator(
-    LoggerQueryTool.call({ format: "failures", limit: 50, failures_only: false }, context),
+    LoggerQueryTool.call({
+      format: "failures",
+      limit: 50,
+      failures_only: false,
+    }, context),
   );
 
   const data = getResultData(results);
@@ -135,7 +157,10 @@ Deno.test("LoggerQueryTool - raw format returns JSON", async () => {
   const context = createMockToolContext();
 
   const results = await collectGenerator(
-    LoggerQueryTool.call({ format: "raw", limit: 10, failures_only: false }, context),
+    LoggerQueryTool.call(
+      { format: "raw", limit: 10, failures_only: false },
+      context,
+    ),
   );
 
   const data = getResultData(results);
@@ -150,7 +175,10 @@ Deno.test("LoggerQueryTool - default format is summary", async () => {
   const context = createMockToolContext();
 
   const results = await collectGenerator(
-    LoggerQueryTool.call({ format: "summary", limit: 50, failures_only: false }, context),
+    LoggerQueryTool.call(
+      { format: "summary", limit: 50, failures_only: false },
+      context,
+    ),
   );
 
   const data = getResultData(results);

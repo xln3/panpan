@@ -12,7 +12,10 @@ export class TestFinder {
   /**
    * Find test files related to a keyword
    */
-  async findTests(keyword: string, cwd: string = Deno.cwd()): Promise<TestCase[]> {
+  async findTests(
+    keyword: string,
+    cwd: string = Deno.cwd(),
+  ): Promise<TestCase[]> {
     const tests: TestCase[] = [];
 
     // Common test directories
@@ -101,7 +104,10 @@ export class TestFinder {
         if (entry.isFile && regex.test(entry.name)) {
           results.push(`${dir}/${entry.name}`);
         } else if (entry.isDirectory) {
-          const subResults = await this.globFiles(`${dir}/${entry.name}`, pattern);
+          const subResults = await this.globFiles(
+            `${dir}/${entry.name}`,
+            pattern,
+          );
           results.push(...subResults);
         }
       }
@@ -149,7 +155,10 @@ export class TestFinder {
   /**
    * Check if a test file contains specific keywords
    */
-  async checkTestContent(testPath: string, keywords: string[]): Promise<boolean> {
+  async checkTestContent(
+    testPath: string,
+    keywords: string[],
+  ): Promise<boolean> {
     try {
       const content = await Deno.readTextFile(testPath);
       const contentLower = content.toLowerCase();

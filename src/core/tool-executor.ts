@@ -78,7 +78,11 @@ export class ToolExecutor {
         resolve();
         return;
       }
-      this.context.abortController.signal.addEventListener("abort", () => resolve(), { once: true });
+      this.context.abortController.signal.addEventListener(
+        "abort",
+        () => resolve(),
+        { once: true },
+      );
     });
 
     for (const entry of this.queue) {
@@ -260,7 +264,10 @@ export class ToolExecutor {
         }
 
         // Emit events based on tool type
-        this.emitToolEvents(block.name, parseResult.data as Record<string, unknown>);
+        this.emitToolEvents(
+          block.name,
+          parseResult.data as Record<string, unknown>,
+        );
 
         // Log tool completion
         entry.durationMs = Date.now() - startTime;
@@ -284,7 +291,9 @@ export class ToolExecutor {
         );
       }
     } catch (error) {
-      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const errorObj = error instanceof Error
+        ? error
+        : new Error(String(error));
       hooks.onToolError(block.name, errorObj);
       entry.durationMs = Date.now() - startTime;
       entry.results.push(

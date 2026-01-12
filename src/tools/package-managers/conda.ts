@@ -11,8 +11,8 @@ import {
   TIMEOUTS,
 } from "./common.ts";
 import {
-  executeWithDiagnostics,
   type DiagnosticResult,
+  executeWithDiagnostics,
 } from "./diagnostic-executor.ts";
 
 const condaOperations = z.enum([
@@ -38,7 +38,9 @@ const inputSchema = z.object({
     .describe('Package specs (e.g., ["pytorch=2.0", "numpy", "cudatoolkit"])'),
 
   // For create
-  python_version: z.string().optional().describe('Python version (e.g., "3.11")'),
+  python_version: z.string().optional().describe(
+    'Python version (e.g., "3.11")',
+  ),
   channels: z
     .array(z.string())
     .optional()
@@ -169,7 +171,8 @@ function buildCommand(input: Input): string[] {
 
 export const CondaTool: Tool<typeof inputSchema, Output> = {
   name: "Conda",
-  description: `Conda environment and package manager with automatic retry and mirror switching.
+  description:
+    `Conda environment and package manager with automatic retry and mirror switching.
 
 Operations:
 - create: Create new environment (auto-retries with mirrors on timeout)
@@ -209,12 +212,14 @@ Features:
     if (isReadOnly) {
       // Use simple streaming execution for read operations
       let result: CommandResult | undefined;
-      for await (const item of executeCommandStreaming(
-        cmd,
-        context.cwd,
-        timeout,
-        context.abortController,
-      )) {
+      for await (
+        const item of executeCommandStreaming(
+          cmd,
+          context.cwd,
+          timeout,
+          context.abortController,
+        )
+      ) {
         if ("stream" in item) {
           yield { type: "streaming_output", line: item };
         } else {
@@ -248,13 +253,15 @@ Features:
 
     let result: DiagnosticResult | undefined;
 
-    for await (const item of executeWithDiagnostics(
-      cmd,
-      context.cwd,
-      timeout,
-      context.abortController,
-      { tool: "conda", maxAttempts: 3 },
-    )) {
+    for await (
+      const item of executeWithDiagnostics(
+        cmd,
+        context.cwd,
+        timeout,
+        context.abortController,
+        { tool: "conda", maxAttempts: 3 },
+      )
+    ) {
       if ("stream" in item) {
         yield { type: "streaming_output", line: item };
       } else if ("type" in item && item.type === "progress") {
@@ -321,10 +328,9 @@ Features:
       return `${operation}: -f ${environment_file}${envSuffix}`;
     }
     if (packages?.length) {
-      const pkgList =
-        packages.length > 3
-          ? `${packages.slice(0, 3).join(", ")}... (${packages.length} total)`
-          : packages.join(", ");
+      const pkgList = packages.length > 3
+        ? `${packages.slice(0, 3).join(", ")}... (${packages.length} total)`
+        : packages.join(", ");
       return `${operation}: ${pkgList}${envSuffix}`;
     }
     return `${operation}${envSuffix}`;

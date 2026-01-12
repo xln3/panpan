@@ -19,7 +19,7 @@
  */
 
 // Network diagnostics
-export { diagnoseNetwork, detectProxyConfig } from "./network-diagnostics.ts";
+export { detectProxyConfig, diagnoseNetwork } from "./network-diagnostics.ts";
 
 // Configuration detection
 export {
@@ -38,20 +38,20 @@ export {
 
 // Retry policy and withRetry
 export {
+  applyFix,
   // Core functions
   createRetryContext,
-  shouldRetry,
-  applyFix,
-  updateRetryContext,
+  type ExecutionResult,
   getRetrySummary,
-  // Higher-order functions
-  withRetry,
-  withRetryStreaming,
   // Types
   type RetryConfig,
   type RetryContext,
-  type ExecutionResult,
+  type RetryProgressEvent,
+  shouldRetry,
+  updateRetryContext,
+  // Higher-order functions
+  withRetry,
   type WithRetryOptions,
   type WithRetryResult,
-  type RetryProgressEvent,
+  withRetryStreaming,
 } from "./retry-policy.ts";

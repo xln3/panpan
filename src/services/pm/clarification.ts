@@ -45,13 +45,22 @@ interface VagueTerm {
 export class ClarificationHelper {
   // Vague terms that need specific definitions
   private vagueTerms: VagueTerm[] = [
-    { term: "快", question: "请具体说明 '快' 的标准是什么？（例如：响应时间 < 100ms）" },
+    {
+      term: "快",
+      question: "请具体说明 '快' 的标准是什么？（例如：响应时间 < 100ms）",
+    },
     { term: "好", question: "请具体说明 '好' 的标准是什么？" },
-    { term: "优化", question: "请说明优化的目标指标是什么？（例如：性能、内存、代码质量）" },
+    {
+      term: "优化",
+      question: "请说明优化的目标指标是什么？（例如：性能、内存、代码质量）",
+    },
     { term: "改进", question: "请说明具体需要改进哪些方面？" },
     { term: "简单", question: "请说明 '简单' 是指代码简洁还是使用简单？" },
     { term: "安全", question: "请说明需要防范哪些安全威胁？" },
-    { term: "稳定", question: "请说明 '稳定' 的具体要求？（例如：99.9% 可用性）" },
+    {
+      term: "稳定",
+      question: "请说明 '稳定' 的具体要求？（例如：99.9% 可用性）",
+    },
     { term: "高效", question: "请说明 '高效' 的衡量标准？" },
     { term: "灵活", question: "请说明需要支持哪些变化场景？" },
     { term: "可扩展", question: "请说明预期的扩展规模和方向？" },

@@ -2,7 +2,7 @@
  * Tests for LogStorage - multi-level log storage
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import { LogStorage } from "../../../src/services/logger/log-storage.ts";
 import type { LogEntry } from "../../../src/types/logger.ts";
 
@@ -124,7 +124,9 @@ Deno.test("LogStorage - export JSON format", () => {
 Deno.test("LogStorage - export Markdown format", () => {
   const storage = new LogStorage();
   storage.add(createTestEntry({ type: "tool_call", success: true }));
-  storage.add(createTestEntry({ type: "error", success: false, error: "Test error" }));
+  storage.add(
+    createTestEntry({ type: "error", success: false, error: "Test error" }),
+  );
 
   const markdown = storage.exportMarkdown();
 

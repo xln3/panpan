@@ -28,7 +28,7 @@ export class LLMClient {
     tools: Tool[],
     signal: AbortSignal,
   ): Promise<CompletionResponse> {
-    return this.provider.complete(
+    return await this.provider.complete(
       {
         messages,
         systemPrompt,

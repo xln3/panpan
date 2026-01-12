@@ -7,17 +7,22 @@ import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
 import { loggerService } from "../../services/logger/mod.ts";
 
 const inputSchema = z.object({
-  format: z.enum(["summary", "timeline", "oneliner", "failures", "raw"]).default("summary").describe(
-    "Output format: summary (stats), timeline (chronological), oneliner (brief), failures (error analysis), raw (JSON)",
-  ),
+  format: z.enum(["summary", "timeline", "oneliner", "failures", "raw"])
+    .default("summary").describe(
+      "Output format: summary (stats), timeline (chronological), oneliner (brief), failures (error analysis), raw (JSON)",
+    ),
   level: z.enum(["summary", "tool", "llm", "full"]).optional().describe(
     "Filter by minimum log level",
   ),
   type: z.string().optional().describe(
     "Filter by entry type: tool_call, tool_result, llm_request, llm_response, sa_invoke, error, etc.",
   ),
-  limit: z.number().default(50).describe("Maximum entries to return (for raw format)"),
-  failures_only: z.boolean().default(false).describe("Only show failed operations"),
+  limit: z.number().default(50).describe(
+    "Maximum entries to return (for raw format)",
+  ),
+  failures_only: z.boolean().default(false).describe(
+    "Only show failed operations",
+  ),
 });
 
 type Input = z.infer<typeof inputSchema>;

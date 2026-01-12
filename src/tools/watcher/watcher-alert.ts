@@ -12,13 +12,27 @@ const inputSchema = z.object({
     "Action: add (create alert), remove (delete by ID), list (show all), clear (remove all), acknowledge (ack all)",
   ),
   // For add action
-  alert_id: z.string().optional().describe("Unique alert ID (required for add/remove)"),
-  monitor_id: z.string().optional().describe("Monitor ID to watch (required for add)"),
-  metric: z.string().optional().describe("Metric name to check, e.g., 'utilization', 'used_percent' (required for add)"),
-  operator: z.enum([">", "<", ">=", "<=", "=="]).optional().describe("Comparison operator (required for add)"),
-  threshold: z.number().optional().describe("Threshold value (required for add)"),
-  message: z.string().optional().describe("Alert message when triggered (required for add)"),
-  cooldown: z.number().default(60000).describe("Cooldown between repeated alerts in ms (default: 60000)"),
+  alert_id: z.string().optional().describe(
+    "Unique alert ID (required for add/remove)",
+  ),
+  monitor_id: z.string().optional().describe(
+    "Monitor ID to watch (required for add)",
+  ),
+  metric: z.string().optional().describe(
+    "Metric name to check, e.g., 'utilization', 'used_percent' (required for add)",
+  ),
+  operator: z.enum([">", "<", ">=", "<=", "=="]).optional().describe(
+    "Comparison operator (required for add)",
+  ),
+  threshold: z.number().optional().describe(
+    "Threshold value (required for add)",
+  ),
+  message: z.string().optional().describe(
+    "Alert message when triggered (required for add)",
+  ),
+  cooldown: z.number().default(60000).describe(
+    "Cooldown between repeated alerts in ms (default: 60000)",
+  ),
 });
 
 type Input = z.infer<typeof inputSchema>;
@@ -69,13 +83,17 @@ Example alert metrics:
     switch (input.action) {
       case "add": {
         // Validate required fields
-        if (!input.alert_id || !input.monitor_id || !input.metric || !input.operator || input.threshold === undefined || !input.message) {
+        if (
+          !input.alert_id || !input.monitor_id || !input.metric ||
+          !input.operator || input.threshold === undefined || !input.message
+        ) {
           yield {
             type: "result",
             data: {
               action: "add",
               success: false,
-              error: "Missing required fields: alert_id, monitor_id, metric, operator, threshold, message",
+              error:
+                "Missing required fields: alert_id, monitor_id, metric, operator, threshold, message",
             },
           };
           return;
@@ -101,7 +119,8 @@ Example alert metrics:
             configs: [config],
             stats: alertManager.getStats(),
           },
-          resultForAssistant: `Alert "${input.alert_id}" added: ${input.metric} ${input.operator} ${input.threshold}`,
+          resultForAssistant:
+            `Alert "${input.alert_id}" added: ${input.metric} ${input.operator} ${input.threshold}`,
         };
         break;
       }
@@ -110,7 +129,11 @@ Example alert metrics:
         if (!input.alert_id) {
           yield {
             type: "result",
-            data: { action: "remove", success: false, error: "alert_id is required" },
+            data: {
+              action: "remove",
+              success: false,
+              error: "alert_id is required",
+            },
           };
           return;
         }
@@ -138,12 +161,14 @@ Example alert metrics:
         const unacked = alertManager.getUnacknowledged();
 
         let summary = `## Alert Configuration\n\n`;
-        summary += `**Stats**: ${stats.totalConfigs} rules, ${stats.totalAlerts} total alerts, ${stats.unacknowledged} unacknowledged\n\n`;
+        summary +=
+          `**Stats**: ${stats.totalConfigs} rules, ${stats.totalAlerts} total alerts, ${stats.unacknowledged} unacknowledged\n\n`;
 
         if (configs.length > 0) {
           summary += `### Rules\n`;
           for (const c of configs) {
-            summary += `- **${c.id}**: ${c.monitorId}.${c.metric} ${c.operator} ${c.threshold} → "${c.message}"\n`;
+            summary +=
+              `- **${c.id}**: ${c.monitorId}.${c.metric} ${c.operator} ${c.threshold} → "${c.message}"\n`;
           }
         } else {
           summary += `No alert rules configured.\n`;
@@ -176,7 +201,8 @@ Example alert metrics:
             success: true,
             stats: alertManager.getStats(),
           },
-          resultForAssistant: `Cleared ${prevStats.totalConfigs} alert rules and ${prevStats.totalAlerts} alerts`,
+          resultForAssistant:
+            `Cleared ${prevStats.totalConfigs} alert rules and ${prevStats.totalAlerts} alerts`,
         };
         break;
       }

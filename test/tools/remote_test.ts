@@ -5,18 +5,24 @@
  * Integration tests with real SSH should be in a separate file.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "jsr:@std/assert@1";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { RemoteConnectTool } from "../../src/tools/remote/remote-connect.ts";
 import { RemoteExecTool } from "../../src/tools/remote/remote-exec.ts";
-import { RemoteFileReadTool, RemoteFileWriteTool } from "../../src/tools/remote/remote-file.ts";
-import { RemoteDisconnectTool, RemoteListTool } from "../../src/tools/remote/remote-disconnect.ts";
+import {
+  RemoteFileReadTool,
+  RemoteFileWriteTool,
+} from "../../src/tools/remote/remote-file.ts";
+import {
+  RemoteDisconnectTool,
+  RemoteListTool,
+} from "../../src/tools/remote/remote-disconnect.ts";
 import { connectionManager } from "../../src/services/remote/mod.ts";
 import { collectGenerator, createMockToolContext } from "../_helpers/mod.ts";
 import type { ToolYield } from "../../src/types/tool.ts";
 
 // Type helper
 function getResultData<T>(results: ToolYield<T>[]): T {
-  const result = results.find(r => r.type === "result");
+  const result = results.find((r) => r.type === "result");
   if (!result || result.type !== "result") {
     throw new Error("Expected result type");
   }

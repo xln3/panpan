@@ -2,21 +2,26 @@
 
 ## Problem Summary
 
-Panpan created a virtual environment **inside** a cloned repository with a conflicting name:
+Panpan created a virtual environment **inside** a cloned repository with a
+conflicting name:
+
 ```
 /test-spargeattn/           <- cloned repo
 └── test-spargeattn/        <- venv inside repo (BAD!)
 └── spas_sage_attn/         <- source code (shadows installed package)
 ```
 
-This causes Python import shadowing - the local source directory is found before the installed package in site-packages.
+This causes Python import shadowing - the local source directory is found before
+the installed package in site-packages.
 
 ## Root Cause
 
 1. **No guidance**: Panpan has no rules about venv placement conventions
-2. **Ambiguous task**: "in path X, in venv Y" was interpreted as nested structure
+2. **Ambiguous task**: "in path X, in venv Y" was interpreted as nested
+   structure
 3. **No validation**: No check for "is this directory already a Python project?"
-4. **Workaround over fix**: When error occurred, panpan worked around it (cd /tmp) instead of fixing structure
+4. **Workaround over fix**: When error occurred, panpan worked around it (cd
+   /tmp) instead of fixing structure
 
 ---
 
@@ -35,7 +40,8 @@ When creating Python virtual environments:
    - This is hidden (won't shadow packages) and is the Python community standard
    - Example: `/project/.venv/`
 
-2. **Never nest venv inside source**: Don't create venv in a directory containing:
+2. **Never nest venv inside source**: Don't create venv in a directory
+   containing:
    - `setup.py`, `pyproject.toml`, or `setup.cfg`
    - A package directory with `__init__.py`
 
@@ -72,7 +78,8 @@ async function validateVenvPath(
       if (targetDir !== ".venv" && !path.isAbsolute(targetDir)) {
         return {
           valid: false,
-          warning: `Creating venv '${targetDir}' inside Python project may cause import shadowing. ` +
+          warning:
+            `Creating venv '${targetDir}' inside Python project may cause import shadowing. ` +
             `Use '.venv' (default) or an absolute path outside the project.`,
         };
       }
@@ -81,13 +88,19 @@ async function validateVenvPath(
 
   // Check if venv name matches a source directory
   const venvName = path.basename(fullPath);
-  const potentialSourceDir = path.join(projectPath, venvName.replace(/-/g, "_"));
+  const potentialSourceDir = path.join(
+    projectPath,
+    venvName.replace(/-/g, "_"),
+  );
   if (await exists(potentialSourceDir)) {
     const initFile = path.join(potentialSourceDir, "__init__.py");
     if (await exists(initFile)) {
       return {
         valid: false,
-        warning: `Venv name '${venvName}' may conflict with source package '${venvName.replace(/-/g, "_")}'. ` +
+        warning:
+          `Venv name '${venvName}' may conflict with source package '${
+            venvName.replace(/-/g, "_")
+          }'. ` +
           `This can cause import shadowing.`,
       };
     }
@@ -163,12 +176,12 @@ Which approach do you prefer?
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `CLAUDE.md` or system prompt | Add venv convention section |
+| File                               | Change                                      |
+| ---------------------------------- | ------------------------------------------- |
+| `CLAUDE.md` or system prompt       | Add venv convention section                 |
 | `src/tools/package-managers/uv.ts` | Add validateVenvPath() before venv creation |
-| `src/services/system-reminder.ts` | Add venv:creating event and reminder |
-| `src/tools/bash.ts` | Detect `python -m venv` commands and warn |
+| `src/services/system-reminder.ts`  | Add venv:creating event and reminder        |
+| `src/tools/bash.ts`                | Detect `python -m venv` commands and warn   |
 
 ---
 
@@ -176,7 +189,8 @@ Which approach do you prefer?
 
 After implementing, these should be caught:
 
-1. `cd /project && python -m venv project` - WARN (venv inside project with matching name)
+1. `cd /project && python -m venv project` - WARN (venv inside project with
+   matching name)
 2. `cd /project && uv venv myenv` - WARN (non-.venv inside project)
 3. `cd /project && uv venv .venv` - OK (standard convention)
 4. `uv venv /separate/path/myenv` - OK (absolute path outside)

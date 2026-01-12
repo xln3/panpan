@@ -1,11 +1,13 @@
 # Sprint 3: 集成
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
 Sprint 3 是最后的集成阶段，将所有新模块集成到现有系统中。
 
 ## 依赖关系
+
 ```
 Sprint 2 完成后才能开始 Sprint 3
 
@@ -19,14 +21,14 @@ H (tools/logger)    ──┘
 
 ## 需要修改的现有文件
 
-| 文件 | 修改类型 | 说明 |
-|------|---------|------|
-| `src/core/query.ts` | 修改 | 注入 Logger hooks |
-| `src/core/tool-executor.ts` | 修改 | 注入 Logger hooks |
-| `src/tools/task.ts` | 修改 | 注入 SA 调用 hooks |
-| `src/utils/agent-loader.ts` | 修改 | 添加新 SA 配置 |
-| `src/tools/mod.ts` | 修改 | 注册新工具 |
-| `src/services/mod.ts` | 新建 | 服务初始化入口 |
+| 文件                        | 修改类型 | 说明               |
+| --------------------------- | -------- | ------------------ |
+| `src/core/query.ts`         | 修改     | 注入 Logger hooks  |
+| `src/core/tool-executor.ts` | 修改     | 注入 Logger hooks  |
+| `src/tools/task.ts`         | 修改     | 注入 SA 调用 hooks |
+| `src/utils/agent-loader.ts` | 修改     | 添加新 SA 配置     |
+| `src/tools/mod.ts`          | 修改     | 注册新工具         |
+| `src/services/mod.ts`       | 新建     | 服务初始化入口     |
 
 ---
 
@@ -64,7 +66,7 @@ export async function* query(
     normalizeMessagesForAPI(messages),
     [...systemPrompt, getPlanModeSystemPrompt(), ...getReminderContents()],
     context.tools,
-    context.abortController.signal
+    context.abortController.signal,
   );
 
   const durationMs = Date.now() - startTime;
@@ -278,10 +280,30 @@ Important guidelines:
 // src/tools/mod.ts
 
 // === 新增导入 ===
-import { RemoteConnectTool, RemoteExecTool, RemoteFileReadTool, RemoteFileWriteTool, RemoteDisconnectTool } from "./remote/mod.ts";
-import { LoggerConfigTool, LoggerQueryTool, LoggerExportTool } from "./logger/mod.ts";
-import { WatcherStartTool, WatcherStopTool, WatcherStatusTool, WatcherAlertTool } from "./watcher/mod.ts";
-import { PMClarifyTool, PMTestPlanTool, PMVerifyTool, PMStatusTool } from "./pm/mod.ts";
+import {
+  RemoteConnectTool,
+  RemoteDisconnectTool,
+  RemoteExecTool,
+  RemoteFileReadTool,
+  RemoteFileWriteTool,
+} from "./remote/mod.ts";
+import {
+  LoggerConfigTool,
+  LoggerExportTool,
+  LoggerQueryTool,
+} from "./logger/mod.ts";
+import {
+  WatcherAlertTool,
+  WatcherStartTool,
+  WatcherStatusTool,
+  WatcherStopTool,
+} from "./watcher/mod.ts";
+import {
+  PMClarifyTool,
+  PMStatusTool,
+  PMTestPlanTool,
+  PMVerifyTool,
+} from "./pm/mod.ts";
 
 export function getAllTools(): Tool[] {
   return [
@@ -400,7 +422,7 @@ export { systemReminderService } from "./system-reminder.ts";
 ```typescript
 // src/mod.ts 或 main 入口文件
 
-import { initializeServices, cleanupServices } from "./services/mod.ts";
+import { cleanupServices, initializeServices } from "./services/mod.ts";
 
 // 在程序启动时初始化
 initializeServices({
@@ -424,23 +446,27 @@ Deno.addSignalListener("SIGINT", async () => {
 ## 终点状态（验收标准）
 
 ### L: core/ 修改
+
 - [ ] Logger hooks 正确注入到 query.ts
 - [ ] Logger hooks 正确注入到 tool-executor.ts
 - [ ] Logger hooks 正确注入到 task.ts
 - [ ] 所有操作都被记录到日志
 
 ### M: agent-loader.ts
+
 - [ ] Remote SA 配置正确
 - [ ] Watcher SA 配置正确
 - [ ] PM SA 配置正确
 - [ ] `getAgentByType()` 能返回新 SA
 
 ### N: tools/mod.ts
+
 - [ ] 所有新工具都被注册
 - [ ] `getAllTools()` 返回完整列表
 - [ ] 工具可以通过 Task 调用
 
 ### 服务初始化
+
 - [ ] `initializeServices()` 正确初始化所有服务
 - [ ] `cleanupServices()` 正确清理资源
 - [ ] 程序退出时连接被正确关闭
@@ -450,6 +476,7 @@ Deno.addSignalListener("SIGINT", async () => {
 ## 验收测试场景
 
 ### 1. Logger 集成测试
+
 ```bash
 deno task run
 > LoggerConfig level=tool
@@ -459,6 +486,7 @@ deno task run
 ```
 
 ### 2. Remote SA 测试
+
 ```bash
 deno task run
 > 使用 Remote SA 连接到 localhost
@@ -468,6 +496,7 @@ deno task run
 ```
 
 ### 3. Watcher SA 测试
+
 ```bash
 deno task run
 > 使用 Watcher SA 监控 CPU 和内存
@@ -476,6 +505,7 @@ deno task run
 ```
 
 ### 4. PM SA 测试
+
 ```bash
 deno task run
 > 使用 PM SA 澄清需求："实现一个快速的缓存功能"
@@ -486,13 +516,13 @@ deno task run
 
 ## 预估时间
 
-| 任务 | 时间 | 说明 |
-|------|------|------|
-| L: core/ 修改 | 1 天 | 修改 3 个文件，添加 hooks |
-| M: agent-loader.ts | 0.5 天 | 添加 3 个 SA 配置 |
-| N: tools/mod.ts | 0.5 天 | 注册所有新工具 |
-| 服务初始化 | 0.5 天 | 创建 services/mod.ts |
-| 集成测试 | 0.5 天 | 验证所有功能 |
+| 任务               | 时间   | 说明                      |
+| ------------------ | ------ | ------------------------- |
+| L: core/ 修改      | 1 天   | 修改 3 个文件，添加 hooks |
+| M: agent-loader.ts | 0.5 天 | 添加 3 个 SA 配置         |
+| N: tools/mod.ts    | 0.5 天 | 注册所有新工具            |
+| 服务初始化         | 0.5 天 | 创建 services/mod.ts      |
+| 集成测试           | 0.5 天 | 验证所有功能              |
 
 **总计**: 约 3 天
 
@@ -500,7 +530,8 @@ deno task run
 
 ## 风险和注意事项
 
-1. **Hook 性能影响**: Logger hooks 在每次操作时都会触发，需要确保异步执行不阻塞主流程
+1. **Hook 性能影响**: Logger hooks
+   在每次操作时都会触发，需要确保异步执行不阻塞主流程
 2. **循环依赖**: 注意 services/ 和 core/ 之间的导入顺序
 3. **向后兼容**: 确保修改不影响现有功能
 4. **测试覆盖**: 新增代码需要有对应的测试

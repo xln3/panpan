@@ -2,11 +2,11 @@
  * Tests for src/llm/stream-parser.ts
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import {
+  type AccumulatedToolCall,
   accumulateToolCalls,
   parseSSEStream,
-  type AccumulatedToolCall,
 } from "../../src/llm/stream-parser.ts";
 import { collectGenerator } from "../_helpers/mod.ts";
 
@@ -237,7 +237,10 @@ Deno.test("accumulateToolCalls - accumulates arguments incrementally", () => {
   const existing = new Map<number, AccumulatedToolCall>();
 
   // First chunk
-  accumulateToolCalls(existing, [{ index: 0, function: { arguments: '{"city' } }]);
+  accumulateToolCalls(existing, [{
+    index: 0,
+    function: { arguments: '{"city' },
+  }]);
   assertEquals(existing.get(0)?.arguments, '{"city');
 
   // Second chunk
@@ -269,7 +272,10 @@ Deno.test("accumulateToolCalls - handles partial deltas", () => {
   // Name second
   accumulateToolCalls(existing, [{ index: 0, function: { name: "my_func" } }]);
   // Arguments in parts
-  accumulateToolCalls(existing, [{ index: 0, function: { arguments: '{"a":' } }]);
+  accumulateToolCalls(existing, [{
+    index: 0,
+    function: { arguments: '{"a":' },
+  }]);
   accumulateToolCalls(existing, [{ index: 0, function: { arguments: "1}" } }]);
 
   const result = existing.get(0);

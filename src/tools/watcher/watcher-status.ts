@@ -4,13 +4,14 @@
 
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../../types/tool.ts";
-import type { MonitorType, MonitorReading } from "../../types/watcher.ts";
-import { monitorRegistry, alertManager } from "../../services/watcher/mod.ts";
+import type { MonitorType } from "../../types/watcher.ts";
+import { alertManager, monitorRegistry } from "../../services/watcher/mod.ts";
 
 const inputSchema = z.object({
-  monitors: z.array(z.enum(["gpu", "cpu", "memory", "disk", "network", "all"])).default(["all"]).describe(
-    "Which monitors to sample: gpu, cpu, memory, disk, network, or all",
-  ),
+  monitors: z.array(z.enum(["gpu", "cpu", "memory", "disk", "network", "all"]))
+    .default(["all"]).describe(
+      "Which monitors to sample: gpu, cpu, memory, disk, network, or all",
+    ),
   check_alerts: z.boolean().default(true).describe(
     "Check readings against configured alerts",
   ),
@@ -73,7 +74,10 @@ Also checks readings against any configured alerts.`,
 
     for (const monitor of available) {
       // Filter by requested types
-      if (!wantAll && !input.monitors.includes(monitor.type as typeof input.monitors[number])) {
+      if (
+        !wantAll &&
+        !input.monitors.includes(monitor.type as typeof input.monitors[number])
+      ) {
         continue;
       }
 
@@ -81,7 +85,7 @@ Also checks readings against any configured alerts.`,
         const reading = await monitor.sample();
 
         // Find the monitor ID
-        const entry = monitorRegistry.list().find(e => e.monitor === monitor);
+        const entry = monitorRegistry.list().find((e) => e.monitor === monitor);
         const monitorId = entry?.id || reading.monitorId;
 
         readings.push({
@@ -138,7 +142,8 @@ function formatStatusSummary(
     for (const [key, value] of Object.entries(r.values)) {
       const formatted = typeof value === "number" && key.includes("percent")
         ? `${value.toFixed(1)}%`
-        : typeof value === "number" && (key.includes("bytes") || key.includes("memory"))
+        : typeof value === "number" &&
+            (key.includes("bytes") || key.includes("memory"))
         ? formatBytes(value)
         : String(value);
       lines.push(`- ${key}: ${formatted}`);
@@ -149,7 +154,9 @@ function formatStatusSummary(
   if (alerts.length > 0) {
     lines.push("### ⚠️ Alerts Triggered");
     for (const a of alerts) {
-      lines.push(`- **${a.alertId}**: ${a.message} (${a.metric}=${a.value}, threshold=${a.threshold})`);
+      lines.push(
+        `- **${a.alertId}**: ${a.message} (${a.metric}=${a.value}, threshold=${a.threshold})`,
+      );
     }
   }
 
@@ -159,7 +166,9 @@ function formatStatusSummary(
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
   return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
@@ -181,7 +190,8 @@ interface ListOutput {
 
 export const WatcherListTool: Tool<typeof listInputSchema, ListOutput> = {
   name: "WatcherList",
-  description: "List all registered monitors and their availability on this system.",
+  description:
+    "List all registered monitors and their availability on this system.",
 
   inputSchema: listInputSchema,
 
@@ -200,8 +210,8 @@ export const WatcherListTool: Tool<typeof listInputSchema, ListOutput> = {
     const summary = await monitorRegistry.getSummary();
     const list = monitorRegistry.list();
 
-    const monitors = summary.map(s => {
-      const entry = list.find(l => l.id === s.id);
+    const monitors = summary.map((s) => {
+      const entry = list.find((l) => l.id === s.id);
       return {
         id: s.id,
         type: s.type,
@@ -211,19 +221,21 @@ export const WatcherListTool: Tool<typeof listInputSchema, ListOutput> = {
       };
     });
 
-    const availableCount = monitors.filter(m => m.available).length;
+    const availableCount = monitors.filter((m) => m.available).length;
 
     yield {
       type: "result",
       data: { monitors },
-      resultForAssistant: `${availableCount}/${monitors.length} monitors available:\n${
-        monitors.map(m => `- ${m.id}: ${m.name} ${m.available ? "✓" : "✗"}`).join("\n")
-      }`,
+      resultForAssistant:
+        `${availableCount}/${monitors.length} monitors available:\n${
+          monitors.map((m) => `- ${m.id}: ${m.name} ${m.available ? "✓" : "✗"}`)
+            .join("\n")
+        }`,
     };
   },
 
   renderResultForAssistant(output: ListOutput): string {
-    const available = output.monitors.filter(m => m.available);
+    const available = output.monitors.filter((m) => m.available);
     return `${available.length}/${output.monitors.length} monitors available`;
   },
 };

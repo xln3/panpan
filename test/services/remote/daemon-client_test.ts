@@ -3,12 +3,12 @@
  * Uses fetch mocking to test HTTP client without actual daemon
  */
 
-import { assertEquals, assertRejects } from "jsr:@std/assert@1";
+import { assertEquals, assertRejects } from "@std/assert";
 import { DaemonClient } from "../../../src/services/remote/daemon-client.ts";
 
 // Helper to mock fetch
 function mockFetch(
-  handler: (url: string, init?: RequestInit) => Response | Promise<Response>
+  handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
 ): () => void {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = handler as typeof fetch;
@@ -41,7 +41,7 @@ Deno.test("DaemonClient - health returns daemon status", async () => {
 });
 
 Deno.test("DaemonClient - exec returns command output with host", async () => {
-  const restore = mockFetch(async (_url, init) => {
+  const restore = mockFetch((_url, init) => {
     const body = JSON.parse(init?.body as string);
     assertEquals(body.command, "echo hello");
     assertEquals(body.cwd, "/tmp");
@@ -71,7 +71,7 @@ Deno.test("DaemonClient - exec returns command output with host", async () => {
 });
 
 Deno.test("DaemonClient - exec passes environment variables", async () => {
-  const restore = mockFetch(async (_url, init) => {
+  const restore = mockFetch((_url, init) => {
     const body = JSON.parse(init?.body as string);
     assertEquals(body.env, { MY_VAR: "value" });
     return Response.json({ stdout: "", stderr: "", exitCode: 0 });
@@ -89,7 +89,7 @@ Deno.test("DaemonClient - exec passes environment variables", async () => {
 });
 
 Deno.test("DaemonClient - exec passes timeout", async () => {
-  const restore = mockFetch(async (_url, init) => {
+  const restore = mockFetch((_url, init) => {
     const body = JSON.parse(init?.body as string);
     assertEquals(body.timeout, 120000);
     return Response.json({ stdout: "", stderr: "", exitCode: 0 });
@@ -107,7 +107,7 @@ Deno.test("DaemonClient - exec passes timeout", async () => {
 });
 
 Deno.test("DaemonClient - readFile returns file content", async () => {
-  const restore = mockFetch(async (_url, init) => {
+  const restore = mockFetch((_url, init) => {
     const body = JSON.parse(init?.body as string);
     assertEquals(body.path, "/tmp/test.txt");
     return Response.json({ content: "file content here" });
@@ -124,7 +124,7 @@ Deno.test("DaemonClient - readFile returns file content", async () => {
 });
 
 Deno.test("DaemonClient - readFile throws on error", async () => {
-  const restore = mockFetch(async () => {
+  const restore = mockFetch(() => {
     return Response.json({ error: "File not found" });
   });
 
@@ -134,7 +134,7 @@ Deno.test("DaemonClient - readFile throws on error", async () => {
     await assertRejects(
       () => client.readFile("/nonexistent"),
       Error,
-      "[my-host]" // Error message includes hostname
+      "[my-host]", // Error message includes hostname
     );
   } finally {
     restore();
@@ -142,7 +142,7 @@ Deno.test("DaemonClient - readFile throws on error", async () => {
 });
 
 Deno.test("DaemonClient - writeFile sends content", async () => {
-  const restore = mockFetch(async (_url, init) => {
+  const restore = mockFetch((_url, init) => {
     const body = JSON.parse(init?.body as string);
     assertEquals(body.path, "/tmp/output.txt");
     assertEquals(body.content, "new content");
@@ -159,7 +159,7 @@ Deno.test("DaemonClient - writeFile sends content", async () => {
 });
 
 Deno.test("DaemonClient - writeFile throws on error", async () => {
-  const restore = mockFetch(async () => {
+  const restore = mockFetch(() => {
     return Response.json({ error: "Permission denied" });
   });
 
@@ -169,7 +169,7 @@ Deno.test("DaemonClient - writeFile throws on error", async () => {
     await assertRejects(
       () => client.writeFile("/root/file", "content"),
       Error,
-      "[server]"
+      "[server]",
     );
   } finally {
     restore();
@@ -178,7 +178,7 @@ Deno.test("DaemonClient - writeFile throws on error", async () => {
 
 Deno.test("DaemonClient - shutdown sends request", async () => {
   let shutdownCalled = false;
-  const restore = mockFetch(async (url) => {
+  const restore = mockFetch((url) => {
     if (url.includes("/shutdown")) {
       shutdownCalled = true;
       return Response.json({ message: "Shutting down" });
@@ -197,7 +197,7 @@ Deno.test("DaemonClient - shutdown sends request", async () => {
 });
 
 Deno.test("DaemonClient - shutdown ignores connection errors", async () => {
-  const restore = mockFetch(async () => {
+  const restore = mockFetch(() => {
     throw new Error("Connection reset");
   });
 
@@ -251,7 +251,7 @@ Deno.test("DaemonClient - throws on non-ok response", async () => {
     await assertRejects(
       () => client.health(),
       Error,
-      "401"
+      "401",
     );
   } finally {
     restore();

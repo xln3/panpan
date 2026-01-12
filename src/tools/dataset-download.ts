@@ -13,20 +13,20 @@ import { executeCommandStreaming } from "./package-managers/common.ts";
  * Download necessity levels
  */
 const necessityLevel = z.enum([
-  "required",     // Won't work without it
-  "recommended",  // Needed for full functionality
-  "optional",     // Nice to have, not strictly needed
+  "required", // Won't work without it
+  "recommended", // Needed for full functionality
+  "optional", // Nice to have, not strictly needed
 ]);
 
 /**
  * Execution method for downloads
  */
 const executionMethod = z.enum([
-  "foreground",   // Stream progress, blocking
-  "nohup",        // Background with nohup
-  "tmux",         // Background in tmux session
-  "screen",       // Background in screen session
-  "manual",       // Output command for user to run
+  "foreground", // Stream progress, blocking
+  "nohup", // Background with nohup
+  "tmux", // Background in tmux session
+  "screen", // Background in screen session
+  "manual", // Output command for user to run
 ]);
 
 const prepareInputSchema = z.object({
@@ -41,9 +41,15 @@ const downloadInputSchema = z.object({
   destination: z.string().describe("Destination path for the download"),
   method: executionMethod.describe("How to execute the download"),
   necessity: necessityLevel.describe("Why this download is needed"),
-  necessity_detail: z.string().optional().describe("Additional explanation for why this is needed"),
-  session_name: z.string().optional().describe("Session name for tmux/screen (default: panpan-download)"),
-  resume: z.boolean().optional().describe("Resume partial download if supported (default: true)"),
+  necessity_detail: z.string().optional().describe(
+    "Additional explanation for why this is needed",
+  ),
+  session_name: z.string().optional().describe(
+    "Session name for tmux/screen (default: panpan-download)",
+  ),
+  resume: z.boolean().optional().describe(
+    "Resume partial download if supported (default: true)",
+  ),
 });
 
 const inputSchema = z.discriminatedUnion("operation", [
@@ -55,7 +61,13 @@ type Input = z.infer<typeof inputSchema>;
 
 interface NetworkError {
   message: string;
-  type: "timeout" | "connection_refused" | "dns" | "ssl" | "http_error" | "unknown";
+  type:
+    | "timeout"
+    | "connection_refused"
+    | "dns"
+    | "ssl"
+    | "http_error"
+    | "unknown";
   httpStatus?: number;
   hints: string[];
 }
@@ -131,7 +143,9 @@ function formatDuration(seconds: number): string {
  * Estimate download time based on typical network speeds
  * Returns estimates for different connection types
  */
-function estimateDownloadTime(bytes: number): { seconds: number; description: string } {
+function estimateDownloadTime(
+  bytes: number,
+): { seconds: number; description: string } {
   // Assume moderate connection: 10 MB/s (80 Mbps)
   // This is conservative for data centers, optimistic for home connections
   const ESTIMATED_SPEED_BYTES_PER_SEC = 10 * 1024 * 1024; // 10 MB/s
@@ -149,7 +163,11 @@ function estimateDownloadTime(bytes: number): { seconds: number; description: st
 /**
  * Classify network error and generate troubleshooting hints
  */
-function classifyNetworkError(error: string, url: string, httpStatus?: number): NetworkError {
+function classifyNetworkError(
+  error: string,
+  url: string,
+  httpStatus?: number,
+): NetworkError {
   const errorLower = error.toLowerCase();
   const urlObj = new URL(url);
   const host = urlObj.hostname;
@@ -175,7 +193,10 @@ function classifyNetworkError(error: string, url: string, httpStatus?: number): 
   }
 
   // Connection refused
-  if (errorLower.includes("connection refused") || errorLower.includes("econnrefused")) {
+  if (
+    errorLower.includes("connection refused") ||
+    errorLower.includes("econnrefused")
+  ) {
     return {
       message: error,
       type: "connection_refused",
@@ -191,8 +212,11 @@ function classifyNetworkError(error: string, url: string, httpStatus?: number): 
   }
 
   // DNS errors
-  if (errorLower.includes("dns") || errorLower.includes("getaddrinfo") ||
-      errorLower.includes("enotfound") || errorLower.includes("name or service not known")) {
+  if (
+    errorLower.includes("dns") || errorLower.includes("getaddrinfo") ||
+    errorLower.includes("enotfound") ||
+    errorLower.includes("name or service not known")
+  ) {
     return {
       message: error,
       type: "dns",
@@ -209,8 +233,10 @@ function classifyNetworkError(error: string, url: string, httpStatus?: number): 
   }
 
   // SSL/TLS errors
-  if (errorLower.includes("ssl") || errorLower.includes("tls") ||
-      errorLower.includes("certificate") || errorLower.includes("handshake")) {
+  if (
+    errorLower.includes("ssl") || errorLower.includes("tls") ||
+    errorLower.includes("certificate") || errorLower.includes("handshake")
+  ) {
     return {
       message: error,
       type: "ssl",
@@ -230,8 +256,11 @@ function classifyNetworkError(error: string, url: string, httpStatus?: number): 
   }
 
   // Broken pipe / connection reset
-  if (errorLower.includes("broken pipe") || errorLower.includes("connection reset") ||
-      errorLower.includes("econnreset")) {
+  if (
+    errorLower.includes("broken pipe") ||
+    errorLower.includes("connection reset") ||
+    errorLower.includes("econnreset")
+  ) {
     return {
       message: error,
       type: "connection_refused",
@@ -476,7 +505,8 @@ function buildDownloadCommand(
 
   args.push(
     "--progress=dot:giga", // Progress indicator for large files
-    "-O", destination,
+    "-O",
+    destination,
     url,
   );
 
@@ -507,14 +537,22 @@ function renderOutput(output: Output): string {
       `  Destination: ${output.destination}`,
       "",
       "File Info:",
-      `  Size: ${output.file_size_human}${output.file_size_bytes !== null ? ` (${output.file_size_bytes} bytes)` : ""}`,
+      `  Size: ${output.file_size_human}${
+        output.file_size_bytes !== null
+          ? ` (${output.file_size_bytes} bytes)`
+          : ""
+      }`,
       `  Type: ${output.content_type || "unknown"}`,
       `  Resume supported: ${output.supports_resume ? "yes" : "no"}`,
       "",
       "Disk Space:",
       `  Available: ${output.available_space_human}`,
-      `  Sufficient: ${output.sufficient_space ? "YES" : "NO - WILL FILL DISK"}`,
-      `  Destination exists: ${output.destination_exists ? "yes (will overwrite)" : "no"}`,
+      `  Sufficient: ${
+        output.sufficient_space ? "YES" : "NO - WILL FILL DISK"
+      }`,
+      `  Destination exists: ${
+        output.destination_exists ? "yes (will overwrite)" : "no"
+      }`,
       "",
       `Estimated time: ${output.estimated_time_human}`,
     ];
@@ -530,7 +568,10 @@ function renderOutput(output: Output): string {
     }
 
     if (!output.sufficient_space) {
-      lines.push("", "⚠️  INSUFFICIENT DISK SPACE - Do not proceed without freeing space!");
+      lines.push(
+        "",
+        "⚠️  INSUFFICIENT DISK SPACE - Do not proceed without freeing space!",
+      );
     }
 
     return lines.join("\n");
@@ -550,7 +591,9 @@ function renderOutput(output: Output): string {
       recommended: "RECOMMENDED - needed for full functionality",
       optional: "OPTIONAL - not strictly needed",
     };
-    lines.push(`  Necessity: ${necessityLabels[output.necessity] || output.necessity}`);
+    lines.push(
+      `  Necessity: ${necessityLabels[output.necessity] || output.necessity}`,
+    );
     if (output.necessity_detail) {
       lines.push(`  Reason: ${output.necessity_detail}`);
     }
@@ -573,7 +616,10 @@ function renderOutput(output: Output): string {
   }
 
   if (output.success !== undefined) {
-    lines.push("", output.success ? "✓ Download started successfully" : "✗ Download failed");
+    lines.push(
+      "",
+      output.success ? "✓ Download started successfully" : "✗ Download failed",
+    );
   }
 
   if (output.error) {
@@ -622,7 +668,9 @@ async function* prepareDownload(
     url,
     destination,
     file_size_bytes: fileInfo.size,
-    file_size_human: fileInfo.size !== null ? formatBytes(fileInfo.size) : "unknown",
+    file_size_human: fileInfo.size !== null
+      ? formatBytes(fileInfo.size)
+      : "unknown",
     content_type: fileInfo.contentType,
     supports_resume: fileInfo.supportsResume,
     available_space_bytes: diskInfo.available,
@@ -630,7 +678,8 @@ async function* prepareDownload(
     destination_exists: destinationExists,
     sufficient_space: sufficientSpace,
     estimated_time_seconds: estimatedTime?.seconds ?? null,
-    estimated_time_human: estimatedTime?.description ?? "unknown (size unavailable)",
+    estimated_time_human: estimatedTime?.description ??
+      "unknown (size unavailable)",
     error: fileInfo.error || diskInfo.error,
     network_error: fileInfo.networkError,
   };
@@ -649,7 +698,15 @@ async function* executeDownload(
   input: z.infer<typeof downloadInputSchema>,
   context: ToolContext,
 ): AsyncGenerator<ToolYield<DownloadOutput>> {
-  const { url, destination, method, necessity, necessity_detail, session_name, resume = true } = input;
+  const {
+    url,
+    destination,
+    method,
+    necessity,
+    necessity_detail,
+    session_name,
+    resume = true,
+  } = input;
   const sessionName = session_name || "panpan-download";
 
   // Check if destination exists (for resume logic)
@@ -667,7 +724,12 @@ async function* executeDownload(
 
   if (method === "manual") {
     // Just return the command for user to run
-    const command = buildCommandString(url, destination, resume, destinationExists);
+    const command = buildCommandString(
+      url,
+      destination,
+      resume,
+      destinationExists,
+    );
     const output: DownloadOutput = {
       operation: "download",
       method: "manual",
@@ -676,7 +738,8 @@ async function* executeDownload(
       necessity,
       necessity_detail,
       command,
-      instructions: `Run this command to download:\n\n  ${command}\n\nTo run in background:\n  nohup ${command} > download.log 2>&1 &\n\nTo monitor progress:\n  tail -f download.log`,
+      instructions:
+        `Run this command to download:\n\n  ${command}\n\nTo run in background:\n  nohup ${command} > download.log 2>&1 &\n\nTo monitor progress:\n  tail -f download.log`,
     };
 
     yield {
@@ -689,7 +752,12 @@ async function* executeDownload(
 
   if (method === "nohup") {
     // Start download in background with nohup
-    const command = buildCommandString(url, destination, resume, destinationExists);
+    const command = buildCommandString(
+      url,
+      destination,
+      resume,
+      destinationExists,
+    );
     const logFile = `${destination}.download.log`;
 
     const nohupCmd = new Deno.Command("bash", {
@@ -711,7 +779,8 @@ async function* executeDownload(
       necessity_detail,
       command,
       session_name: pid,
-      check_command: `tail -f "${logFile}"  # Monitor progress\nps -p ${pid}  # Check if running\nkill ${pid}  # Stop download`,
+      check_command:
+        `tail -f "${logFile}"  # Monitor progress\nps -p ${pid}  # Check if running\nkill ${pid}  # Stop download`,
       success,
     };
 
@@ -725,7 +794,12 @@ async function* executeDownload(
 
   if (method === "tmux") {
     // Start download in tmux session
-    const command = buildCommandString(url, destination, resume, destinationExists);
+    const command = buildCommandString(
+      url,
+      destination,
+      resume,
+      destinationExists,
+    );
 
     // Check if tmux is available
     const checkTmux = new Deno.Command("which", {
@@ -791,7 +865,8 @@ async function* executeDownload(
       necessity_detail,
       command,
       session_name: sessionName,
-      check_command: `tmux attach -t ${sessionName}  # Attach to monitor (Ctrl+B D to detach)\ntmux kill-session -t ${sessionName}  # Stop download`,
+      check_command:
+        `tmux attach -t ${sessionName}  # Attach to monitor (Ctrl+B D to detach)\ntmux kill-session -t ${sessionName}  # Stop download`,
       success: true,
     };
 
@@ -805,7 +880,12 @@ async function* executeDownload(
 
   if (method === "screen") {
     // Start download in screen session
-    const command = buildCommandString(url, destination, resume, destinationExists);
+    const command = buildCommandString(
+      url,
+      destination,
+      resume,
+      destinationExists,
+    );
 
     // Check if screen is available
     const checkScreen = new Deno.Command("which", {
@@ -823,7 +903,8 @@ async function* executeDownload(
         destination,
         necessity,
         necessity_detail,
-        error: "screen is not installed. Use 'nohup' or 'manual' method instead.",
+        error:
+          "screen is not installed. Use 'nohup' or 'manual' method instead.",
       };
       yield {
         type: "result",
@@ -870,7 +951,8 @@ async function* executeDownload(
       necessity_detail,
       command,
       session_name: sessionName,
-      check_command: `screen -r ${sessionName}  # Attach to monitor (Ctrl+A D to detach)\nscreen -X -S ${sessionName} quit  # Stop download`,
+      check_command:
+        `screen -r ${sessionName}  # Attach to monitor (Ctrl+A D to detach)\nscreen -X -S ${sessionName} quit  # Stop download`,
       success: true,
     };
 
@@ -893,12 +975,14 @@ async function* executeDownload(
   const DOWNLOAD_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours max
   let result: CommandResult | undefined;
 
-  for await (const item of executeCommandStreaming(
-    cmd,
-    context.cwd,
-    DOWNLOAD_TIMEOUT,
-    context.abortController,
-  )) {
+  for await (
+    const item of executeCommandStreaming(
+      cmd,
+      context.cwd,
+      DOWNLOAD_TIMEOUT,
+      context.abortController,
+    )
+  ) {
     if ("stream" in item) {
       yield { type: "streaming_output", line: item };
     } else {
@@ -934,7 +1018,8 @@ async function* executeDownload(
 
 export const DatasetDownloadTool: Tool<typeof inputSchema, Output> = {
   name: "DatasetDownload",
-  description: `Download large files (datasets, model weights) with safety checks and user consent.
+  description:
+    `Download large files (datasets, model weights) with safety checks and user consent.
 
 ## Two-Phase Workflow
 
@@ -1014,7 +1099,9 @@ IMPORTANT: Always call prepare first, inform user of size/time/necessity, get ex
       }
       // Extract filename from URL for concise display
       const filename = input.url.split("/").pop() || input.url;
-      const shortName = filename.length > 30 ? filename.slice(0, 29) + "…" : filename;
+      const shortName = filename.length > 30
+        ? filename.slice(0, 29) + "…"
+        : filename;
       return `check: ${shortName}`;
     }
 
@@ -1025,7 +1112,9 @@ IMPORTANT: Always call prepare first, inform user of size/time/necessity, get ex
     }
 
     const filename = url.split("/").pop() || url;
-    const shortName = filename.length > 25 ? filename.slice(0, 24) + "…" : filename;
+    const shortName = filename.length > 25
+      ? filename.slice(0, 24) + "…"
+      : filename;
     return `${method}: ${shortName}`;
   },
 };

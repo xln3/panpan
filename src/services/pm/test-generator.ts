@@ -3,7 +3,7 @@
  * Used by PM SA to create tests for acceptance criteria
  */
 
-import type { TestCase, Requirement } from "../../types/pm.ts";
+import type { Requirement, TestCase } from "../../types/pm.ts";
 
 /**
  * Supported test frameworks
@@ -35,7 +35,10 @@ export class TestGenerator {
   /**
    * Get template for specific framework
    */
-  private getTemplate(framework: TestFramework, requirement: Requirement): string {
+  private getTemplate(
+    framework: TestFramework,
+    requirement: Requirement,
+  ): string {
     const { clarified, acceptance } = requirement;
 
     switch (framework) {

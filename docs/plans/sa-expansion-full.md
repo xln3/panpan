@@ -1,7 +1,9 @@
 # Task 扩展为分类 Subagent (SA) 设计方案
 
 ## 目标
+
 将现有的 Task tool 扩展为四种专门的 Subagent 类型：
+
 1. **RemoteSA** - 远程执行隔离
 2. **WatcherSA** - 资源监控
 3. **PMSA** - 需求确认与验收
@@ -39,17 +41,20 @@
 ## Phase 1: LoggerSA（基础设施）
 
 ### 设计要点
+
 LoggerSA 是**观察者模式**，通过 hook 注入被动记录，不是主动调用的 agent。
 
 ### 四级日志体系
-| 级别 | 记录内容 | 用途 |
-|------|---------|------|
-| `summary` | 高层操作摘要（"读取了 5 个文件"） | 快速概览 |
-| `tool` | Tool 输入/输出/耗时 | 调试工具问题 |
-| `llm` | LLM 请求/响应/token 使用 | 调试提示词 |
-| `full` | 全量包括流式输出 | 完整取证 |
+
+| 级别      | 记录内容                          | 用途         |
+| --------- | --------------------------------- | ------------ |
+| `summary` | 高层操作摘要（"读取了 5 个文件"） | 快速概览     |
+| `tool`    | Tool 输入/输出/耗时               | 调试工具问题 |
+| `llm`     | LLM 请求/响应/token 使用          | 调试提示词   |
+| `full`    | 全量包括流式输出                  | 完整取证     |
 
 ### 新增文件
+
 ```
 src/services/logger/
 ├── logger-service.ts   # 主服务，管理日志级别和存储
@@ -68,11 +73,13 @@ src/types/logger.ts     # 日志类型定义
 ```
 
 ### Hook 注入点（修改现有文件）
+
 1. `src/core/query.ts` - 包裹 LLM 调用
 2. `src/core/tool-executor.ts:302` - 扩展 `emitToolEvents()` 方法
 3. `src/tools/task.ts` - 包裹 SA 调用
 
 ### 关键类型
+
 ```typescript
 type LogLevel = "summary" | "tool" | "llm" | "full";
 
@@ -99,6 +106,7 @@ interface FailurePoint {
 ## Phase 2: RemoteSA（远程执行）
 
 ### 设计要点
+
 **混合模式**：SSH bootstrap → Daemon 通信
 
 ```
@@ -114,6 +122,7 @@ interface FailurePoint {
 ```
 
 ### 新增文件
+
 ```
 src/services/remote/
 ├── connection-manager.ts  # 连接池管理
@@ -132,6 +141,7 @@ src/types/remote.ts
 ```
 
 ### 关键类型
+
 ```typescript
 interface RemoteHost {
   id: string;
@@ -145,11 +155,12 @@ interface RemoteExecOutput {
   stdout: string;
   stderr: string;
   exitCode: number;
-  host: string;  // 明确标记来源，避免混淆
+  host: string; // 明确标记来源，避免混淆
 }
 ```
 
 ### Daemon 设计
+
 - Deno 单文件，~200 行
 - 随机高端口 + 一次性 token
 - 超时自动关闭（默认 30 分钟）
@@ -160,9 +171,11 @@ interface RemoteExecOutput {
 ## Phase 3: WatcherSA（资源监控）
 
 ### 设计要点
+
 **插件式监控器架构**，支持本地 + 远程
 
 ### 新增文件
+
 ```
 src/services/watcher/
 ├── monitor-registry.ts    # 监控器注册表
@@ -188,17 +201,20 @@ src/types/watcher.ts
 ```
 
 ### Monitor 插件接口
+
 ```typescript
 interface Monitor {
   type: MonitorType;
   isAvailable(): Promise<boolean>;
-  getCommand(): string;           // 用于远程执行
+  getCommand(): string; // 用于远程执行
   parseOutput(stdout: string): MonitorReading;
 }
 ```
 
 ### 远程监控
+
 WatcherSA 通过 RemoteSA 的连接监控远程服务器：
+
 ```typescript
 const result = await connectionManager.execute(connectionId, {
   command: gpuMonitor.getCommand(),
@@ -211,9 +227,11 @@ return gpuMonitor.parseOutput(result.stdout);
 ## Phase 4: PMSA（产品经理）
 
 ### 设计要点
+
 完整的**需求 → 测试 → 验收**循环
 
 ### 工作流程
+
 ```
 用户输入 ──▶ [1. Clarify] ──▶ [2. Plan] ──▶ [3. Execute] ──▶ [4. Verify]
                │                │              │               │
@@ -229,6 +247,7 @@ return gpuMonitor.parseOutput(result.stdout);
 ```
 
 ### 新增文件
+
 ```
 src/services/pm/
 ├── requirements.ts       # 需求解析和跟踪
@@ -248,11 +267,12 @@ src/types/pm.ts
 ```
 
 ### 预算追踪
+
 ```typescript
 interface PMBudget {
   tokenLimit: number;
   tokenUsed: number;
-  timeLimit: number;   // ms
+  timeLimit: number; // ms
   timeUsed: number;
   attemptsUsed: number;
 }
@@ -262,11 +282,12 @@ interface PMBudget {
 ```
 
 ### 替代方案管理
+
 ```typescript
 interface AlternativePlan {
   id: string;
   description: string;
-  confidence: number;  // 0-1
+  confidence: number; // 0-1
   result?: "success" | "failed";
 }
 
@@ -278,21 +299,22 @@ interface AlternativePlan {
 
 ## 需要修改的现有文件
 
-| 文件 | 修改内容 |
-|------|---------|
-| `src/types/agent.ts` | 添加 `persistent`, `hasBackgroundServices`, `requiresInit` 字段 |
-| `src/utils/agent-loader.ts` | 添加 Remote, Watcher, PM agent 配置 |
-| `src/tools/mod.ts` | 注册新工具 |
-| `src/core/tool-executor.ts:302` | 扩展 `emitToolEvents()` 注入 Logger hooks |
-| `src/core/query.ts` | 添加 LLM 调用的 Logger hooks |
-| `src/tools/task.ts` | 添加 SA 调用的 Logger hooks |
-| `src/services/mod.ts` | 新建，服务初始化入口 |
+| 文件                            | 修改内容                                                        |
+| ------------------------------- | --------------------------------------------------------------- |
+| `src/types/agent.ts`            | 添加 `persistent`, `hasBackgroundServices`, `requiresInit` 字段 |
+| `src/utils/agent-loader.ts`     | 添加 Remote, Watcher, PM agent 配置                             |
+| `src/tools/mod.ts`              | 注册新工具                                                      |
+| `src/core/tool-executor.ts:302` | 扩展 `emitToolEvents()` 注入 Logger hooks                       |
+| `src/core/query.ts`             | 添加 LLM 调用的 Logger hooks                                    |
+| `src/tools/task.ts`             | 添加 SA 调用的 Logger hooks                                     |
+| `src/services/mod.ts`           | 新建，服务初始化入口                                            |
 
 ---
 
 ## 实现顺序（总览）
 
 ### 依赖关系图
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        可并行开发的独立模块                              │
@@ -347,32 +369,36 @@ interface AlternativePlan {
 ### 并行开发计划
 
 **Sprint 1: 独立模块（可完全并行）** - 第 1-5 天
-| 模块 ID | 路径 | 职责 | 预估 |
-|---------|------|------|------|
-| A | `src/types/{logger,remote,watcher,pm}.ts` | 类型定义 | 0.5 天 |
-| B | `src/utils/diagnostics/*` | 网络/配置/错误诊断 | 2 天 |
-| C | `src/services/remote/*` | SSH/Daemon 通信 | 3 天 |
-| D | `src/services/logger/*` | 日志存储/摘要/分析 | 2 天 |
-| E | `src/services/watcher/monitors/*` | GPU/CPU/Disk 监控器 | 2 天 |
-| F | `src/services/pm/*` | 需求/测试/验收/预算 | 3 天 |
+
+| 模块 ID | 路径                                      | 职责                | 预估   |
+| ------- | ----------------------------------------- | ------------------- | ------ |
+| A       | `src/types/{logger,remote,watcher,pm}.ts` | 类型定义            | 0.5 天 |
+| B       | `src/utils/diagnostics/*`                 | 网络/配置/错误诊断  | 2 天   |
+| C       | `src/services/remote/*`                   | SSH/Daemon 通信     | 3 天   |
+| D       | `src/services/logger/*`                   | 日志存储/摘要/分析  | 2 天   |
+| E       | `src/services/watcher/monitors/*`         | GPU/CPU/Disk 监控器 | 2 天   |
+| F       | `src/services/pm/*`                       | 需求/测试/验收/预算 | 3 天   |
 
 **Sprint 2: 工具层（依赖 Sprint 1）** - 第 3-8 天（可部分并行）
-| 模块 ID | 路径 | 依赖 | 预估 |
-|---------|------|------|------|
-| G | `src/tools/remote/*` | A, C | 1.5 天 |
-| H | `src/tools/logger/*` | A, D | 1 天 |
-| I | `src/tools/watcher/*` | A, E | 1 天 |
-| J | `src/tools/pm/*` | A, F | 1.5 天 |
-| K | Pip/Conda/Uv/Pixi 增强 | B | 2 天 |
+
+| 模块 ID | 路径                   | 依赖 | 预估   |
+| ------- | ---------------------- | ---- | ------ |
+| G       | `src/tools/remote/*`   | A, C | 1.5 天 |
+| H       | `src/tools/logger/*`   | A, D | 1 天   |
+| I       | `src/tools/watcher/*`  | A, E | 1 天   |
+| J       | `src/tools/pm/*`       | A, F | 1.5 天 |
+| K       | Pip/Conda/Uv/Pixi 增强 | B    | 2 天   |
 
 **Sprint 3: 集成（顺序执行）** - 第 8-10 天
-| 模块 ID | 路径 | 依赖 | 预估 |
-|---------|------|------|------|
-| L | `src/core/query.ts`, `tool-executor.ts` | D, H | 1 天 |
-| M | `src/utils/agent-loader.ts` | G, H, I, J | 0.5 天 |
-| N | `src/tools/mod.ts` | G, H, I, J | 0.5 天 |
+
+| 模块 ID | 路径                                    | 依赖       | 预估   |
+| ------- | --------------------------------------- | ---------- | ------ |
+| L       | `src/core/query.ts`, `tool-executor.ts` | D, H       | 1 天   |
+| M       | `src/utils/agent-loader.ts`             | G, H, I, J | 0.5 天 |
+| N       | `src/tools/mod.ts`                      | G, H, I, J | 0.5 天 |
 
 ### 并行开发甘特图
+
 ```
 天数:    1    2    3    4    5    6    7    8    9   10
         ├────┼────┼────┼────┼────┼────┼────┼────┼────┤
@@ -427,15 +453,15 @@ export interface PMBudget { ... }
 
 每个模块完成后可独立验证：
 
-| 模块 | 验证方式 |
-|------|---------|
+| 模块          | 验证方式                             |
+| ------------- | ------------------------------------ |
 | B diagnostics | 单元测试：模拟超时错误，验证诊断结果 |
-| C remote | 集成测试：连接本地 SSH，执行命令 |
-| D logger | 单元测试：记录和查询日志 |
-| E monitors | 单元测试：解析 nvidia-smi/top 输出 |
-| F pm | 单元测试：需求解析、预算追踪 |
-| G-J tools | 手动测试：通过 REPL 调用工具 |
-| K 工具增强 | 集成测试：模拟网络错误，验证自动修复 |
+| C remote      | 集成测试：连接本地 SSH，执行命令     |
+| D logger      | 单元测试：记录和查询日志             |
+| E monitors    | 单元测试：解析 nvidia-smi/top 输出   |
+| F pm          | 单元测试：需求解析、预算追踪         |
+| G-J tools     | 手动测试：通过 REPL 调用工具         |
+| K 工具增强    | 集成测试：模拟网络错误，验证自动修复 |
 
 总计：约 10-12 天（并行开发）vs 19-23 天（串行开发）
 
@@ -444,18 +470,22 @@ export interface PMBudget { ... }
 ## 风险和注意事项
 
 ### RemoteSA
+
 - **安全**: Daemon token 泄露风险 → 一次性 token + 短超时
 - **防火墙**: 端口可能被封 → 提供 SSH tunnel 回退模式
 
 ### WatcherSA
+
 - **性能**: 采样过频影响性能 → 默认间隔 1s
 - **兼容性**: 不同系统命令不同 → `isAvailable()` 检查
 
 ### PMSA
+
 - **无限循环**: 澄清问答可能死循环 → 最多 5 个问题
 - **测试质量**: 生成的测试可能有误 → 标记为 "generated"，提示人工审查
 
 ### LoggerSA
+
 - **性能开销**: full 级别日志影响性能 → 异步写入 + 可配置级别
 - **存储膨胀**: 日志过大 → 最大条目限制 + 自动轮转
 
@@ -466,7 +496,9 @@ export interface PMBudget { ... }
 ## Phase 0: 自动诊断修复基础设施（最高优先级）
 
 ### 问题背景
+
 当前 agent 遇到网络/配置问题时会"甩锅"给用户：
+
 ```
 ## NEXT STEPS:
 # With proxy
@@ -477,9 +509,11 @@ huggingface-cli download stabilityai/sd-turbo
 这是不好的行为。Agent 应该**自己尝试解决**，而不是让用户手动操作。
 
 ### 设计要点
+
 **在工具内部实现"诊断→自动修复→重试"循环**，而不是依赖 LLM 多轮交互。
 
 ### 新增诊断模块
+
 ```
 src/utils/diagnostics/
 ├── network-diagnostics.ts  # 网络连通性、DNS、代理检测
@@ -489,6 +523,7 @@ src/utils/diagnostics/
 ```
 
 ### 关键类型
+
 ```typescript
 interface NetworkDiagnosis {
   networkReachable: boolean;
@@ -500,21 +535,29 @@ interface NetworkDiagnosis {
 }
 
 interface ErrorDiagnosis {
-  type: "timeout" | "dns" | "ssl" | "http_error" | "permission" | "disk_full" | "unknown";
+  type:
+    | "timeout"
+    | "dns"
+    | "ssl"
+    | "http_error"
+    | "permission"
+    | "disk_full"
+    | "unknown";
   autoFixable: boolean;
   suggestedFixes: Fix[];
   requiresUserInput: boolean;
-  userQuestion?: string;  // 如果需要用户输入，问什么
+  userQuestion?: string; // 如果需要用户输入，问什么
 }
 
 interface Fix {
   description: string;
   action: () => Promise<void>;
-  confidence: number;  // 0-1，修复成功的置信度
+  confidence: number; // 0-1，修复成功的置信度
 }
 ```
 
 ### 工具增强模式
+
 ```typescript
 // 增强后的工具执行流程
 async *call(input, context) {
@@ -561,16 +604,18 @@ async *call(input, context) {
 ```
 
 ### 需要增强的工具
-| 工具 | 增强内容 | 参考实现 |
-|------|---------|---------|
-| Pip | 超时→检测代理/镜像→自动切换清华源→重试 | dataset-download.ts:150-326 |
-| Conda | 同上，加 conda 特有的 channel 配置 | - |
-| Uv | 同上 | - |
-| Pixi | 同上 | - |
-| Bash | 检测常见失败模式（权限、缺少依赖、网络） | - |
-| WebFetch | 代理检测、重试、降级到无 JavaScript 模式 | - |
+
+| 工具     | 增强内容                                 | 参考实现                    |
+| -------- | ---------------------------------------- | --------------------------- |
+| Pip      | 超时→检测代理/镜像→自动切换清华源→重试   | dataset-download.ts:150-326 |
+| Conda    | 同上，加 conda 特有的 channel 配置       | -                           |
+| Uv       | 同上                                     | -                           |
+| Pixi     | 同上                                     | -                           |
+| Bash     | 检测常见失败模式（权限、缺少依赖、网络） | -                           |
+| WebFetch | 代理检测、重试、降级到无 JavaScript 模式 | -                           |
 
 ### 配置检测优先级
+
 ```typescript
 // config-detector.ts
 async function detectProxyConfig(): Promise<string | undefined> {
@@ -581,7 +626,7 @@ async function detectProxyConfig(): Promise<string | undefined> {
     () => Deno.env.get("ALL_PROXY"),
     () => parseGitConfig("~/.gitconfig", "http.proxy"),
     () => parseCurlrc("~/.curlrc"),
-    () => parseSystemProxy(),  // macOS/Linux 系统代理
+    () => parseSystemProxy(), // macOS/Linux 系统代理
   ];
 
   for (const source of sources) {
@@ -591,7 +636,9 @@ async function detectProxyConfig(): Promise<string | undefined> {
   return undefined;
 }
 
-async function detectMirrors(service: "pypi" | "huggingface" | "npm"): Promise<string[]> {
+async function detectMirrors(
+  service: "pypi" | "huggingface" | "npm",
+): Promise<string[]> {
   const mirrors: Record<string, string[]> = {
     pypi: [
       "https://pypi.tuna.tsinghua.edu.cn/simple",
@@ -609,6 +656,7 @@ async function detectMirrors(service: "pypi" | "huggingface" | "npm"): Promise<s
 ```
 
 ### 与 SA 的集成
+
 ```
 工具执行失败
     ↓
@@ -627,6 +675,7 @@ LoggerSA 记录整个诊断过程
 ```
 
 ### 实现顺序
+
 ```
 Phase 0.1: 创建诊断模块 (2 天)
 ├── network-diagnostics.ts
@@ -648,6 +697,7 @@ Phase 0.3: 推广到其他工具 (2 天)
 ## 验证方案
 
 ### Phase 0 验证（自动诊断修复）
+
 ```bash
 # 测试场景：模拟网络超时
 deno task run
@@ -666,12 +716,14 @@ deno task run
 ```
 
 ### 验证检查清单
+
 - [ ] Pip 超时时自动尝试镜像源
 - [ ] 检测到现有代理配置时自动应用
 - [ ] 返回的错误包含完整诊断信息
 - [ ] 诊断信息区分"可自动修复"和"需要用户输入"
 
 ### Phase 1 验证
+
 ```bash
 # 1. 配置日志级别
 # 2. 执行一些操作
@@ -683,6 +735,7 @@ deno task run
 ```
 
 ### Phase 2 验证
+
 ```bash
 # 1. 连接测试服务器
 # 2. 执行命令，验证输出包含 hostname
@@ -694,6 +747,7 @@ deno task run
 ```
 
 ### Phase 3 验证
+
 ```bash
 # 1. 启动 GPU+CPU 监控
 # 2. 设置告警阈值
@@ -705,6 +759,7 @@ deno task run
 ```
 
 ### Phase 4 验证
+
 ```bash
 # 1. 给一个模糊需求
 # 2. PMSA 应该问澄清问题

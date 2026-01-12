@@ -1,10 +1,12 @@
 # DatasetDownload Tool
 
-Download large files (datasets, model weights) with safety checks and user consent.
+Download large files (datasets, model weights) with safety checks and user
+consent.
 
 ## Overview
 
-The DatasetDownload tool is designed for handling large file downloads that are common in ML workflows. It provides:
+The DatasetDownload tool is designed for handling large file downloads that are
+common in ML workflows. It provides:
 
 - Pre-flight checks (size, disk space, network)
 - **Local resource validation** (disk space, existing files)
@@ -28,18 +30,23 @@ Call with `operation="prepare"` to run pre-flight checks:
 ```
 
 #### Remote Checks
+
 - **File size** and content type (via HTTP HEAD request)
 - **Resume support** detection (checks Accept-Ranges header)
 - **Network connectivity** with error diagnosis
-- **Estimated download time** (assumes ~10 MB/s, notes uncertainty for large files)
+- **Estimated download time** (assumes ~10 MB/s, notes uncertainty for large
+  files)
 
 #### Local Resource Checks
+
 - **Available disk space** at destination path (via `df`)
 - **Sufficiency validation** - requires file size + 10% buffer
 - **Destination exists** check - warns if file will be overwritten
-- **Parent directory resolution** - finds nearest existing parent if destination doesn't exist yet
+- **Parent directory resolution** - finds nearest existing parent if destination
+  doesn't exist yet
 
 If disk space is insufficient, the tool returns:
+
 ```
 Disk Space:
   Available: 2.50 GB
@@ -50,6 +57,7 @@ Disk Space:
 ```
 
 Example output:
+
 ```
 Download Preparation Results:
   URL: https://example.com/dataset.tar.gz
@@ -71,6 +79,7 @@ Estimated time: 8 minutes (at ~10 MB/s, actual time depends on network)
 ### Phase 2: Inform User
 
 Present the prepare results to the user:
+
 - File size and estimated download time
 - Disk space status (sufficient or not)
 - Necessity level and explanation
@@ -95,13 +104,13 @@ Call with `operation="download"` after user consent:
 
 ## Download Methods
 
-| Method | Description | Use When |
-|--------|-------------|----------|
+| Method       | Description                      | Use When                     |
+| ------------ | -------------------------------- | ---------------------------- |
 | `foreground` | Blocking with streaming progress | Small files, need to monitor |
-| `nohup` | Background with log file | Want to disconnect terminal |
-| `tmux` | Detached tmux session | Want to attach/monitor later |
-| `screen` | Detached screen session | Prefer screen over tmux |
-| `manual` | Returns wget command | User wants full control |
+| `nohup`      | Background with log file         | Want to disconnect terminal  |
+| `tmux`       | Detached tmux session            | Want to attach/monitor later |
+| `screen`     | Detached screen session          | Prefer screen over tmux      |
+| `manual`     | Returns wget command             | User wants full control      |
 
 ### Foreground
 
@@ -110,6 +119,7 @@ Streams download progress to terminal. Blocking operation with 4-hour timeout.
 ### nohup
 
 Starts download in background using `nohup`. Returns:
+
 - Process ID (PID)
 - Log file location (`{destination}.download.log`)
 - Commands to monitor/stop
@@ -124,6 +134,7 @@ kill 12345  # Stop download
 ### tmux
 
 Creates detached tmux session. Returns:
+
 - Session name
 - Commands to attach/kill
 
@@ -136,6 +147,7 @@ tmux kill-session -t panpan-download  # Stop download
 ### screen
 
 Creates detached screen session. Returns:
+
 - Session name
 - Commands to attach/kill
 
@@ -165,19 +177,21 @@ To monitor progress:
 
 Specify why the download is needed:
 
-| Level | Description | Example |
-|-------|-------------|---------|
-| `required` | Won't work without it | Training dataset |
-| `recommended` | Needed for full functionality | Pretrained weights |
-| `optional` | Nice to have, not strictly needed | Evaluation dataset |
+| Level         | Description                       | Example            |
+| ------------- | --------------------------------- | ------------------ |
+| `required`    | Won't work without it             | Training dataset   |
+| `recommended` | Needed for full functionality     | Pretrained weights |
+| `optional`    | Nice to have, not strictly needed | Evaluation dataset |
 
 Use `necessity_detail` for additional context explaining why the file is needed.
 
 ## Network Error Handling
 
-When network errors occur during prepare, the tool provides specific troubleshooting hints:
+When network errors occur during prepare, the tool provides specific
+troubleshooting hints:
 
 ### Timeout
+
 ```
 The connection timed out. Possible causes:
   • Server is slow or overloaded
@@ -192,6 +206,7 @@ Try:
 ```
 
 ### Connection Refused / Reset
+
 ```
 Connection was reset or broken.
 
@@ -207,6 +222,7 @@ Try:
 ```
 
 ### DNS Errors
+
 ```
 DNS lookup failed for example.com
 
@@ -218,6 +234,7 @@ Try:
 ```
 
 ### SSL/TLS Errors
+
 ```
 SSL/TLS connection failed.
 
@@ -233,11 +250,11 @@ Try:
 
 ### HTTP Errors
 
-| Code | Hints |
-|------|-------|
-| 403 | Check authentication, try VPN, search for alternative sources |
-| 404 | Verify URL, file may have moved or been deleted |
-| 5xx | Server error, retry later, check status page, try mirror |
+| Code | Hints                                                         |
+| ---- | ------------------------------------------------------------- |
+| 403  | Check authentication, try VPN, search for alternative sources |
+| 404  | Verify URL, file may have moved or been deleted               |
+| 5xx  | Server error, retry later, check status page, try mirror      |
 
 ## Resume Support
 
@@ -247,7 +264,8 @@ The tool handles resume intelligently:
 2. **Smart usage**: Only uses `wget -c` when:
    - Resume is requested (`resume: true`, the default)
    - Destination file already exists (partial download)
-3. **Safety**: Avoids `-c` flag when file doesn't exist (unnecessary) or when server doesn't support ranges (would corrupt file)
+3. **Safety**: Avoids `-c` flag when file doesn't exist (unnecessary) or when
+   server doesn't support ranges (would corrupt file)
 
 ## Input Schema
 
@@ -278,7 +296,8 @@ The tool handles resume intelligently:
 
 ## Best Practices
 
-1. **Always run prepare first** - Never download without checking size and disk space
+1. **Always run prepare first** - Never download without checking size and disk
+   space
 2. **Inform the user** - Present all relevant information before downloading
 3. **Get explicit consent** - Let the user choose the download method
 4. **Use appropriate method**:

@@ -115,7 +115,9 @@ export class BudgetTracker {
       ),
       attemptsPercent: Math.min(
         100,
-        Math.round((this.budget.attemptsUsed / this.budget.attemptsLimit) * 100),
+        Math.round(
+          (this.budget.attemptsUsed / this.budget.attemptsLimit) * 100,
+        ),
       ),
     };
   }
@@ -150,7 +152,10 @@ export class BudgetTracker {
     return {
       tokens: Math.max(0, this.budget.tokenLimit - this.budget.tokenUsed),
       timeMs: Math.max(0, this.budget.timeLimit - this.budget.timeUsed),
-      attempts: Math.max(0, this.budget.attemptsLimit - this.budget.attemptsUsed),
+      attempts: Math.max(
+        0,
+        this.budget.attemptsLimit - this.budget.attemptsUsed,
+      ),
     };
   }
 
@@ -226,10 +231,16 @@ export class BudgetTracker {
 | 类型 | 已用 | 限制 | 剩余 | 百分比 |
 |------|------|------|------|--------|
 | Token | ${status.tokenUsed} | ${status.tokenLimit} | ${remaining.tokens} | ${status.tokenPercent}% |
-| 时间 | ${Math.round(status.timeUsed / 1000)}s | ${Math.round(status.timeLimit / 1000)}s | ${Math.round(remaining.timeMs / 1000)}s | ${status.timePercent}% |
+| 时间 | ${Math.round(status.timeUsed / 1000)}s | ${
+      Math.round(status.timeLimit / 1000)
+    }s | ${Math.round(remaining.timeMs / 1000)}s | ${status.timePercent}% |
 | 尝试 | ${status.attemptsUsed} | ${status.attemptsLimit} | ${remaining.attempts} | ${status.attemptsPercent}% |
 
-${status.budgetExhausted ? `**状态**: ⚠️ 预算已耗尽 - ${this.getExhaustionReason()}` : "**状态**: ✅ 预算充足"}
+${
+      status.budgetExhausted
+        ? `**状态**: ⚠️ 预算已耗尽 - ${this.getExhaustionReason()}`
+        : "**状态**: ✅ 预算充足"
+    }
 `;
   }
 }

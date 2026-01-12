@@ -12,12 +12,13 @@
 
 #### 1. Docker 沙箱 → 本地直接运行 + Deno 权限控制
 
-| 对比 | Agent PANDA | panpan |
-|------|-------------|--------|
+| 对比     | Agent PANDA                  | panpan                 |
+| -------- | ---------------------------- | ---------------------- |
 | 执行环境 | Docker container + tmux 隔离 | 直接在用户真实环境执行 |
-| 运行时 | Python 脚本 | Deno/TypeScript |
+| 运行时   | Python 脚本                  | Deno/TypeScript        |
 
 **改动原因**：
+
 - 云服务器等场景可能没有 Docker，沙箱机制反而成为部署障碍
 - 直接操作用户真实环境才能真正解决环境问题
 - Deno 替代 Python 的优势：
@@ -29,12 +30,13 @@
 
 #### 2. Success/Fail 循环 → Plan + Execution (Todos) 模式
 
-| 对比 | Agent PANDA | panpan |
-|------|-------------|--------|
-| 控制流 | 简单的 Success?/Fail 二元判断 | Plan Mode（只读探索）+ Todo 任务分解 |
-| 执行模型 | 线性循环 | 递归 async generator |
+| 对比     | Agent PANDA                   | panpan                               |
+| -------- | ----------------------------- | ------------------------------------ |
+| 控制流   | 简单的 Success?/Fail 二元判断 | Plan Mode（只读探索）+ Todo 任务分解 |
+| 执行模型 | 线性循环                      | 递归 async generator                 |
 
 **改动原因**：
+
 - 复杂环境问题需要先探索再修改，避免误操作
 - 长链路任务需要显式的进度追踪和断点
 - 递归生成器支持流式输出和中断恢复
@@ -42,18 +44,20 @@
 #### 3. 包管理器独立工具（pip/conda/uv/pixi）
 
 **改动原因**：
+
 - 不同包管理器行为差异大：
   - **超时**：uv 5min、pip 10min、conda 15min（conda 解析依赖慢）
   - **输出格式**：进度条、日志格式各异
   - **venv 处理**：路径约定、激活方式不同
-- **用户灵活性**：项目 README 写的是 conda，但用户想用 uv —— panpan 不应只照搬 README 指令
+- **用户灵活性**：项目 README 写的是 conda，但用户想用 uv —— panpan 不应只照搬
+  README 指令
 
 #### 4. 安装方式：git clone → 一行命令
 
-| 对比 | Agent PANDA | panpan |
-|------|-------------|--------|
+| 对比 | Agent PANDA                                     | panpan                         |
+| ---- | ----------------------------------------------- | ------------------------------ |
 | 安装 | `git clone` → `docker build` → `python main.py` | `deno install jsr:@xln/panpan` |
-| 性质 | 实验性 demo | 可发布的 CLI 工具 |
+| 性质 | 实验性 demo                                     | 可发布的 CLI 工具              |
 
 ---
 
@@ -72,16 +76,17 @@
 
 ### 三、核心目标仍在开发中的特性
 
-**panpan 核心宗旨**：跨硬件、跨系统，能够自动、长时、长链路地复现项目/代码/迁移环境
+**panpan
+核心宗旨**：跨硬件、跨系统，能够自动、长时、长链路地复现项目/代码/迁移环境
 
 #### Task → 分类 Subagent 体系（规划中）
 
-| Subagent | 职责 | 解决的问题 |
-|----------|------|-----------|
-| **RemoteSA** | SSH 状态维护 | 避免"先装 panpan 才能装环境"的鸡生蛋问题；明确区分本地/远程操作边界 |
-| **WatcherSA** | 硬件资源监控 | GPU/CPU/Disk/RAM/IO 监控；适应云服务器非标准资源（网络盘、inodes） |
-| **PMSA** | 需求确认与终态判断 | 通过问答明确需求；编写 test 验证终态；未完成则刷新循环 |
-| **LoggerSA** | 客观操作记录 | 解决 agent 自我报告不可靠问题；通过 hook 记全记准全部历史操作 |
+| Subagent      | 职责               | 解决的问题                                                          |
+| ------------- | ------------------ | ------------------------------------------------------------------- |
+| **RemoteSA**  | SSH 状态维护       | 避免"先装 panpan 才能装环境"的鸡生蛋问题；明确区分本地/远程操作边界 |
+| **WatcherSA** | 硬件资源监控       | GPU/CPU/Disk/RAM/IO 监控；适应云服务器非标准资源（网络盘、inodes）  |
+| **PMSA**      | 需求确认与终态判断 | 通过问答明确需求；编写 test 验证终态；未完成则刷新循环              |
+| **LoggerSA**  | 客观操作记录       | 解决 agent 自我报告不可靠问题；通过 hook 记全记准全部历史操作       |
 
 ---
 
@@ -123,14 +128,15 @@ flowchart LR
 
 **架构演进对比图**展示从 Agent PANDA 到 panpan 的核心变化：
 
-| 维度 | Agent PANDA | panpan |
-|------|-------------|--------|
-| **控制流** | Success/Fail 二元循环 | Plan → Todo → Query Loop 递归 |
-| **执行环境** | Docker + tmux 沙箱 | 本地环境 + Deno 权限控制 |
-| **中断支持** | 无 | ESC 中断 + 流式输出 |
-| **任务追踪** | 无 | Todo 持久化 |
+| 维度         | Agent PANDA           | panpan                        |
+| ------------ | --------------------- | ----------------------------- |
+| **控制流**   | Success/Fail 二元循环 | Plan → Todo → Query Loop 递归 |
+| **执行环境** | Docker + tmux 沙箱    | 本地环境 + Deno 权限控制      |
+| **中断支持** | 无                    | ESC 中断 + 流式输出           |
+| **任务追踪** | 无                    | Todo 持久化                   |
 
 **核心设计理念变化**：
+
 - 从"隔离执行"到"直接操作真实环境"
 - 从"简单循环"到"Plan + Execution 分离"
 - 从"Python demo"到"可发布的 Deno CLI"
@@ -273,20 +279,26 @@ flowchart TB
 1. **用户层** → **入口层**: 用户输入通过 CLI 解析，加载配置
 2. **入口层** → **UI层**: 启动 REPL 主循环，处理中断和输出显示
 3. **UI层** → **核心层**: REPL 调用 Query Loop（递归 async generator）
-4. **核心层** ↔ **LLM层**: Query Loop 调用 LLM Client，Provider Factory 自动选择 Anthropic/OpenAI
-5. **核心层** → **工具层**: Tool Executor 执行工具，支持并发（只读）和串行（修改）
+4. **核心层** ↔ **LLM层**: Query Loop 调用 LLM Client，Provider Factory 自动选择
+   Anthropic/OpenAI
+5. **核心层** → **工具层**: Tool Executor
+   执行工具，支持并发（只读）和串行（修改）
 6. **工具层** → **服务层**: 工具依赖各种服务（Todo存储、后台任务、Plan模式等）
 
 **关键数据流：**
+
 - 递归循环：`Query Loop → LLM → tool_use → Executor → tool_results → Query Loop`
 - 中断传播：`InterruptHandler → AbortController → 所有组件`
 
 **保留的分层环境概念：**
+
 - 包管理工具（pip/conda/uv/pixi）操作的目标是分层运行环境
 - 从 Python 依赖到硬件驱动的完整栈
 
 **绘图要点：**
-- 使用 6 个主要区块（用户、入口、UI、核心、LLM、工具）+ 3 个辅助区块（服务、环境、外部）
+
+- 使用 6 个主要区块（用户、入口、UI、核心、LLM、工具）+ 3
+  个辅助区块（服务、环境、外部）
 - 核心层的 Query Loop 和 Tool Executor 之间有双向箭头（递归循环）
 - 分层环境保持原图的垂直栈结构
 - 建议使用不同颜色区分各层（参考 style 定义的颜色）
@@ -445,48 +457,62 @@ flowchart TB
 **模块级详细图展示每个目录下的核心文件：**
 
 **入口和配置 (mod.ts, src/config/)**
+
 - `mod.ts`: CLI 入口，使用 @cliffy/command 解析参数
 - `config.ts`: 配置加载，支持 CLI > 环境变量 > 默认值 优先级
 
 **类型系统 (src/types/)**
-- `tool.ts`: Tool 接口定义，ToolContext（执行上下文），ToolYield（生成器输出类型）
-- `message.ts`: ContentBlock（text/thinking/tool_use/tool_result），Message 联合类型
+
+- `tool.ts`: Tool
+  接口定义，ToolContext（执行上下文），ToolYield（生成器输出类型）
+- `message.ts`: ContentBlock（text/thinking/tool_use/tool_result），Message
+  联合类型
 - `llm.ts`: LLM 配置和 API 类型
 - `provider.ts`: Provider 内部类型
 - `todo.ts`: Todo 项目类型
 
 **UI层 (src/ui/)**
+
 - `repl.ts`: REPL 主循环，InterruptHandler（ESC/Ctrl+O），/命令处理
 - `output-display.ts`: 流式输出控制器，折叠/展开切换，100行缓冲区
 - `render.ts`: 消息格式化和 ANSI 颜色
 
 **核心层 (src/core/)**
+
 - `query.ts`: 递归 async generator，消息标准化，中断检查点
 - `tool-executor.ts`: 工具执行器，并发队列管理，canExecute() 判断
 - `messages.ts`: 消息创建和清理
 
 **LLM层 (src/llm/)**
+
 - `client.ts`: 统一 LLM 客户端接口
-- `provider-factory.ts`: Provider 自动检测（claude-* → Anthropic，其他 → OpenAI）
+- `provider-factory.ts`: Provider 自动检测（claude-* → Anthropic，其他 →
+  OpenAI）
 - `stream-parser.ts`: SSE 流解析
-- `providers/anthropic.ts`: Anthropic 原生 API（Prompt Caching + Extended Thinking）
+- `providers/anthropic.ts`: Anthropic 原生 API（Prompt Caching + Extended
+  Thinking）
 - `providers/openai.ts`: OpenAI 兼容 API
 
 **工具层 (src/tools/)**
+
 - 文件工具: `file-read.ts`, `file-edit.ts`, `file-write.ts`
 - 搜索工具: `glob.ts`, `grep.ts`
 - 执行工具: `bash.ts`
-- 任务工具: `task.ts`（子代理），`task-output.ts`（后台任务查询），`todo-write.ts`
+- 任务工具:
+  `task.ts`（子代理），`task-output.ts`（后台任务查询），`todo-write.ts`
 - Plan模式: `enter-plan-mode.ts`, `exit-plan-mode.ts`
 - Web工具: `web-fetch.ts`（Playwright + Stealth），`web-search.ts`
 - 数据集: `dataset-download.ts`（两阶段下载）
 - LSP: `lsp.ts`
-- 包管理: `package-managers/common.ts`（流式执行 + 自适应超时），`pip.ts/conda.ts/uv.ts/pixi.ts`
+- 包管理: `package-managers/common.ts`（流式执行 +
+  自适应超时），`pip.ts/conda.ts/uv.ts/pixi.ts`
 
 **服务层 (src/services/)**
+
 - `system-reminder.ts`: 事件驱动的上下文注入服务
 
 **工具层 (src/utils/)**
+
 - `plan-mode.ts`: Plan 模式状态和工具限制
 - `todo-storage.ts`: Todo 持久化（~/.panpan/todos.json）
 - `background-tasks.ts`: 后台任务管理
@@ -496,6 +522,7 @@ flowchart TB
 - `cwd.ts`: 工作目录管理
 
 **绘图要点：**
+
 - 每个文件节点显示文件名 + 3-4 个关键职责
 - 用箭头表示主要依赖关系
 - 工具层内部按功能分组（文件、搜索、执行、Web、包管理）
@@ -738,29 +765,38 @@ flowchart TB
    - `mod.ts` → `config/config.ts`, `ui/repl.ts`, `types/llm.ts`
 
 2. **UI层**
-   - `ui/repl.ts` → `core/query.ts`, `ui/output-display.ts`, `ui/render.ts`, `llm/client.ts`, `tools/mod.ts`, `utils/todo-storage.ts`, `utils/plan-mode.ts`
+   - `ui/repl.ts` → `core/query.ts`, `ui/output-display.ts`, `ui/render.ts`,
+     `llm/client.ts`, `tools/mod.ts`, `utils/todo-storage.ts`,
+     `utils/plan-mode.ts`
    - `ui/output-display.ts` → `types/tool.ts`
    - `ui/render.ts` → `types/message.ts`
 
 3. **核心层**
-   - `core/query.ts` → `core/messages.ts`, `core/tool-executor.ts`, `llm/client.ts`, `services/system-reminder.ts`, `utils/plan-mode.ts`
-   - `core/tool-executor.ts` → `tools/mod.ts`, `utils/plan-mode.ts`, `services/system-reminder.ts`
+   - `core/query.ts` → `core/messages.ts`, `core/tool-executor.ts`,
+     `llm/client.ts`, `services/system-reminder.ts`, `utils/plan-mode.ts`
+   - `core/tool-executor.ts` → `tools/mod.ts`, `utils/plan-mode.ts`,
+     `services/system-reminder.ts`
    - `core/messages.ts` → `types/message.ts`
 
 4. **LLM层**
    - `llm/client.ts` → `llm/provider-factory.ts`
-   - `llm/provider-factory.ts` → `llm/providers/anthropic.ts`, `llm/providers/openai.ts`
+   - `llm/provider-factory.ts` → `llm/providers/anthropic.ts`,
+     `llm/providers/openai.ts`
    - `llm/providers/*` → `llm/stream-parser.ts`
 
 5. **工具层**
    - `tools/mod.ts` → 所有工具文件
    - 所有工具 → `types/tool.ts`
    - 特殊依赖：
-     - `tools/task.ts` → `utils/agent-loader.ts`, `utils/background-tasks.ts`, `core/query.ts`（递归调用）
-     - `tools/todo-write.ts` → `utils/todo-storage.ts`, `services/system-reminder.ts`
-     - `tools/web-fetch.ts` → `utils/browser-manager.ts`, `utils/stealth-scripts.ts`
+     - `tools/task.ts` → `utils/agent-loader.ts`, `utils/background-tasks.ts`,
+       `core/query.ts`（递归调用）
+     - `tools/todo-write.ts` → `utils/todo-storage.ts`,
+       `services/system-reminder.ts`
+     - `tools/web-fetch.ts` → `utils/browser-manager.ts`,
+       `utils/stealth-scripts.ts`
      - `tools/dataset-download.ts` → `utils/background-tasks.ts`
-     - `tools/enter-plan-mode.ts`, `tools/exit-plan-mode.ts` → `utils/plan-mode.ts`
+     - `tools/enter-plan-mode.ts`, `tools/exit-plan-mode.ts` →
+       `utils/plan-mode.ts`
      - `package-managers/*.ts` → `package-managers/common.ts`
 
 6. **服务层**
@@ -776,10 +812,12 @@ flowchart TB
    - `types/provider.ts` → `types/message.ts`, `types/llm.ts`
 
 **关键循环依赖：**
+
 - `tools/task.ts` → `core/query.ts`（子代理通过递归调用 query 实现）
 - 这是有意设计，不是问题
 
 **绘图要点：**
+
 - 使用简化的节点名（只显示文件名）
 - 箭头表示 import 关系
 - 特别标注 task.ts → query.ts 的循环依赖
@@ -862,14 +900,14 @@ abortController.abort()
 
 ## 模块职责对照表
 
-| 原始概念 | 当前实现 | 说明 |
-|---------|---------|------|
-| User request | UserMessage | 消息类型系统 |
-| System instructions | systemPrompt + SystemReminder | 分层提示注入 |
-| History cmd output pairs | Message[] (ContentBlock[]) | 结构化消息历史 |
-| LLM Thinking | AssistantMessage + ThinkingBlock | 支持 extended thinking |
-| Success/Fail loop | Recursive query() | 自动多轮工具调用 |
-| Docker container | Local tools + Bash | 无容器化隔离 |
-| tmux virtual env | Package manager tools | pip/conda/uv/pixi |
-| Stackoverflow/Github search | WebFetch, WebSearch | 已实现 |
-| Layered environments | 分层环境框（概念保留） | 包管理器操作目标 |
+| 原始概念                    | 当前实现                         | 说明                   |
+| --------------------------- | -------------------------------- | ---------------------- |
+| User request                | UserMessage                      | 消息类型系统           |
+| System instructions         | systemPrompt + SystemReminder    | 分层提示注入           |
+| History cmd output pairs    | Message[] (ContentBlock[])       | 结构化消息历史         |
+| LLM Thinking                | AssistantMessage + ThinkingBlock | 支持 extended thinking |
+| Success/Fail loop           | Recursive query()                | 自动多轮工具调用       |
+| Docker container            | Local tools + Bash               | 无容器化隔离           |
+| tmux virtual env            | Package manager tools            | pip/conda/uv/pixi      |
+| Stackoverflow/Github search | WebFetch, WebSearch              | 已实现                 |
+| Layered environments        | 分层环境框（概念保留）           | 包管理器操作目标       |

@@ -17,31 +17,36 @@ import { ExitPlanModeTool } from "./exit-plan-mode.ts";
 import { TaskTool } from "./task.ts";
 import { TaskOutputTool } from "./task-output.ts";
 import { LspTool } from "./lsp.ts";
-import { CondaTool, PipTool, UvTool, PixiTool } from "./package-managers/mod.ts";
+import {
+  CondaTool,
+  PipTool,
+  PixiTool,
+  UvTool,
+} from "./package-managers/mod.ts";
 import { DatasetDownloadTool } from "./dataset-download.ts";
 // PM SA tools
-import { PMRequirementTool, PMTestPlanTool, PMBudgetTool } from "./pm/mod.ts";
+import { PMBudgetTool, PMRequirementTool, PMTestPlanTool } from "./pm/mod.ts";
 // Remote SA tools
 import {
   RemoteConnectTool,
+  RemoteDisconnectTool,
   RemoteExecTool,
   RemoteFileReadTool,
   RemoteFileWriteTool,
-  RemoteDisconnectTool,
   RemoteListTool,
 } from "./remote/mod.ts";
 // Logger SA tools
 import {
-  LoggerConfigTool,
-  LoggerQueryTool,
-  LoggerExportTool,
   LoggerClearTool,
+  LoggerConfigTool,
+  LoggerExportTool,
+  LoggerQueryTool,
 } from "./logger/mod.ts";
 // Watcher SA tools
 import {
-  WatcherStatusTool,
-  WatcherListTool,
   WatcherAlertTool,
+  WatcherListTool,
+  WatcherStatusTool,
 } from "./watcher/mod.ts";
 
 /**
@@ -116,30 +121,35 @@ export { ExitPlanModeTool } from "./exit-plan-mode.ts";
 export { TaskTool } from "./task.ts";
 export { TaskOutputTool } from "./task-output.ts";
 // Package manager tools
-export { CondaTool, PipTool, UvTool, PixiTool } from "./package-managers/mod.ts";
+export {
+  CondaTool,
+  PipTool,
+  PixiTool,
+  UvTool,
+} from "./package-managers/mod.ts";
 // Dataset download tool
 export { DatasetDownloadTool } from "./dataset-download.ts";
 // PM SA tools
-export { PMRequirementTool, PMTestPlanTool, PMBudgetTool } from "./pm/mod.ts";
+export { PMBudgetTool, PMRequirementTool, PMTestPlanTool } from "./pm/mod.ts";
 // Remote SA tools
 export {
   RemoteConnectTool,
+  RemoteDisconnectTool,
   RemoteExecTool,
   RemoteFileReadTool,
   RemoteFileWriteTool,
-  RemoteDisconnectTool,
   RemoteListTool,
 } from "./remote/mod.ts";
 // Logger SA tools
 export {
-  LoggerConfigTool,
-  LoggerQueryTool,
-  LoggerExportTool,
   LoggerClearTool,
+  LoggerConfigTool,
+  LoggerExportTool,
+  LoggerQueryTool,
 } from "./logger/mod.ts";
 // Watcher SA tools
 export {
-  WatcherStatusTool,
-  WatcherListTool,
   WatcherAlertTool,
+  WatcherListTool,
+  WatcherStatusTool,
 } from "./watcher/mod.ts";

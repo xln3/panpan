@@ -4,10 +4,10 @@
  */
 
 import type {
-  RemoteHost,
-  RemoteConnection,
   DaemonInfo,
+  RemoteConnection,
   RemoteExecOutput,
+  RemoteHost,
 } from "../../types/remote.ts";
 import { bootstrapDaemon, type SSHBootstrapOptions } from "./ssh-bootstrap.ts";
 import { DaemonClient, type ExecOptions } from "./daemon-client.ts";
@@ -38,7 +38,7 @@ class ConnectionManager {
    */
   async connect(
     host: RemoteHost,
-    options?: SSHBootstrapOptions
+    options?: SSHBootstrapOptions,
   ): Promise<string> {
     const connectionId = this.getConnectionId(host);
 
@@ -101,8 +101,9 @@ class ConnectionManager {
       return connectionId;
     } catch (error) {
       entry.connection.status = "error";
-      entry.connection.error =
-        error instanceof Error ? error.message : String(error);
+      entry.connection.error = error instanceof Error
+        ? error.message
+        : String(error);
       throw error;
     }
   }
@@ -112,11 +113,11 @@ class ConnectionManager {
    */
   async execute(
     connectionId: string,
-    options: ExecOptions
+    options: ExecOptions,
   ): Promise<RemoteExecOutput> {
     const entry = this.getReadyConnection(connectionId);
     entry.connection.lastActivity = Date.now();
-    return entry.client!.exec(options);
+    return await entry.client!.exec(options);
   }
 
   /**
@@ -125,7 +126,7 @@ class ConnectionManager {
   async readFile(connectionId: string, path: string): Promise<string> {
     const entry = this.getReadyConnection(connectionId);
     entry.connection.lastActivity = Date.now();
-    return entry.client!.readFile(path);
+    return await entry.client!.readFile(path);
   }
 
   /**
@@ -134,11 +135,11 @@ class ConnectionManager {
   async writeFile(
     connectionId: string,
     path: string,
-    content: string
+    content: string,
   ): Promise<void> {
     const entry = this.getReadyConnection(connectionId);
     entry.connection.lastActivity = Date.now();
-    return entry.client!.writeFile(path, content);
+    return await entry.client!.writeFile(path, content);
   }
 
   /**
@@ -215,7 +216,7 @@ class ConnectionManager {
 
     if (entry.connection.status !== "ready" || !entry.client) {
       throw new Error(
-        `Connection not ready: ${connectionId} (status: ${entry.connection.status})`
+        `Connection not ready: ${connectionId} (status: ${entry.connection.status})`,
       );
     }
 

@@ -12,8 +12,8 @@ import {
   TIMEOUTS,
 } from "./common.ts";
 import {
-  executeWithDiagnostics,
   type DiagnosticResult,
+  executeWithDiagnostics,
 } from "./diagnostic-executor.ts";
 
 const pipOperations = z.enum([
@@ -74,7 +74,14 @@ function getTimeout(operation: string): number {
 }
 
 function buildCommand(input: Input): string[] {
-  const { operation, packages, requirements_file, upgrade, editable, package_name } = input;
+  const {
+    operation,
+    packages,
+    requirements_file,
+    upgrade,
+    editable,
+    package_name,
+  } = input;
 
   switch (operation) {
     case "install": {
@@ -120,7 +127,8 @@ function buildCommand(input: Input): string[] {
 
 export const PipTool: Tool<typeof inputSchema, Output> = {
   name: "Pip",
-  description: `Python package manager with automatic retry and mirror switching.
+  description:
+    `Python package manager with automatic retry and mirror switching.
 
 Operations:
 - install: Install packages (auto-retries with mirrors on timeout)
@@ -159,12 +167,14 @@ Features:
     if (isReadOnly) {
       // Use simple streaming execution for read operations
       let result: CommandResult | undefined;
-      for await (const item of executeCommandStreaming(
-        cmd,
-        context.cwd,
-        timeout,
-        context.abortController,
-      )) {
+      for await (
+        const item of executeCommandStreaming(
+          cmd,
+          context.cwd,
+          timeout,
+          context.abortController,
+        )
+      ) {
         if ("stream" in item) {
           yield { type: "streaming_output", line: item };
         } else {
@@ -198,13 +208,15 @@ Features:
 
     let result: DiagnosticResult | undefined;
 
-    for await (const item of executeWithDiagnostics(
-      cmd,
-      context.cwd,
-      timeout,
-      context.abortController,
-      { tool: "pip", maxAttempts: 3 },
-    )) {
+    for await (
+      const item of executeWithDiagnostics(
+        cmd,
+        context.cwd,
+        timeout,
+        context.abortController,
+        { tool: "pip", maxAttempts: 3 },
+      )
+    ) {
       if ("stream" in item) {
         yield { type: "streaming_output", line: item };
       } else if ("type" in item && item.type === "progress") {
@@ -265,10 +277,9 @@ Features:
 
     // Concise mode
     if (packages?.length) {
-      const pkgList =
-        packages.length > 3
-          ? `${packages.slice(0, 3).join(", ")}... (${packages.length} total)`
-          : packages.join(", ");
+      const pkgList = packages.length > 3
+        ? `${packages.slice(0, 3).join(", ")}... (${packages.length} total)`
+        : packages.join(", ");
       return `${operation}: ${pkgList}`;
     }
     if (requirements_file) {

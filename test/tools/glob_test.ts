@@ -2,7 +2,7 @@
  * Tests for src/tools/glob.ts
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { GlobTool } from "../../src/tools/glob.ts";
 import {
   collectGenerator,
@@ -33,7 +33,9 @@ async function runGlob(
     GlobTool.call({ pattern, path }, context),
   );
   const result = results[0] as ToolYield<GlobOutput>;
-  return result.type === "result" ? result.data : { filenames: [], numFiles: 0, durationMs: 0, truncated: false };
+  return result.type === "result"
+    ? result.data
+    : { filenames: [], numFiles: 0, durationMs: 0, truncated: false };
 }
 
 // =============================================================================
@@ -227,7 +229,10 @@ Deno.test("GlobTool - respects abort signal", async () => {
     await createTempStructure(dir, files);
 
     const controller = new AbortController();
-    const context = createMockToolContext({ cwd: dir, abortController: controller });
+    const context = createMockToolContext({
+      cwd: dir,
+      abortController: controller,
+    });
 
     // Abort immediately
     controller.abort();

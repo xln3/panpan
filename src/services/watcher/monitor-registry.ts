@@ -137,7 +137,9 @@ class MonitorRegistry {
    * Sample all available monitors at once.
    * @returns Map of monitor ID to reading
    */
-  async sampleAll(): Promise<Map<string, Awaited<ReturnType<Monitor["sample"]>>>> {
+  async sampleAll(): Promise<
+    Map<string, Awaited<ReturnType<Monitor["sample"]>>>
+  > {
     const results = new Map();
     const available = await this.getAvailable();
 

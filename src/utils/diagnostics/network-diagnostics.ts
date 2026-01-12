@@ -10,7 +10,7 @@ import { detectProxyConfig, getMirrorsForUrl } from "./config-detector.ts";
  * Perform comprehensive network diagnostics
  */
 export async function diagnoseNetwork(
-  targetUrl?: string
+  targetUrl?: string,
 ): Promise<NetworkDiagnosis> {
   const results: NetworkDiagnosis = {
     networkReachable: false,
@@ -37,7 +37,9 @@ export async function diagnoseNetwork(
   if (targetUrl) {
     const [dnsWorking, sslValid] = await Promise.all([
       checkDNS(targetUrl),
-      targetUrl.startsWith("https://") ? checkSSL(targetUrl) : Promise.resolve(true),
+      targetUrl.startsWith("https://")
+        ? checkSSL(targetUrl)
+        : Promise.resolve(true),
     ]);
     results.dnsWorking = dnsWorking;
     results.sslValid = sslValid;

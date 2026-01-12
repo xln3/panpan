@@ -163,7 +163,11 @@ export async function* executeCommandStreaming(
       source: string,
     ): Promise<{ source: string; value: T | null; done: boolean }> => {
       const result = await gen.next();
-      return { source, value: result.done ? null : result.value, done: !!result.done };
+      return {
+        source,
+        value: result.done ? null : result.value,
+        done: !!result.done,
+      };
     };
 
     // Process both streams
@@ -171,7 +175,9 @@ export async function* executeCommandStreaming(
     let stderrPromise = !stderrDone ? nextItem(stderrGen, "stderr") : null;
 
     while ((!stdoutDone || !stderrDone) && !aborted) {
-      const promises: Promise<{ source: string; value: StreamingLine | null; done: boolean }>[] = [];
+      const promises: Promise<
+        { source: string; value: StreamingLine | null; done: boolean }
+      >[] = [];
       if (stdoutPromise) promises.push(stdoutPromise);
       if (stderrPromise) promises.push(stderrPromise);
 
@@ -244,13 +250,15 @@ export async function executeCommand(
 ): Promise<CommandResult> {
   // Use streaming internally but don't yield lines
   let result: CommandResult | undefined;
-  for await (const item of executeCommandStreaming(
-    cmd,
-    cwd,
-    timeout,
-    abortController,
-    env,
-  )) {
+  for await (
+    const item of executeCommandStreaming(
+      cmd,
+      cwd,
+      timeout,
+      abortController,
+      env,
+    )
+  ) {
     if ("exitCode" in item) {
       result = item;
     }

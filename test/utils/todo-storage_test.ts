@@ -5,7 +5,7 @@
  * async saveToDisk(), which completes after the test ends.
  */
 
-import { assertEquals, assertNotEquals } from "jsr:@std/assert@1";
+import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   clearTodos,
   getActiveTodo,
@@ -42,14 +42,25 @@ Deno.test({
     await resetTodos();
 
     const todos: TodoInput[] = [
-      { content: "Task 1", status: "in_progress", activeForm: "Working on Task 1" },
-      { content: "Task 2", status: "in_progress", activeForm: "Working on Task 2" },
+      {
+        content: "Task 1",
+        status: "in_progress",
+        activeForm: "Working on Task 1",
+      },
+      {
+        content: "Task 2",
+        status: "in_progress",
+        activeForm: "Working on Task 2",
+      },
     ];
 
     const result = setTodos(todos);
 
     assertEquals(result.success, false);
-    assertEquals(result.error?.includes("Only one task can be in_progress"), true);
+    assertEquals(
+      result.error?.includes("Only one task can be in_progress"),
+      true,
+    );
   },
 });
 
@@ -62,7 +73,11 @@ Deno.test({
 
     const todos: TodoInput[] = [
       { content: "Task 1", status: "pending", activeForm: "Working on Task 1" },
-      { content: "Task 2", status: "completed", activeForm: "Working on Task 2" },
+      {
+        content: "Task 2",
+        status: "completed",
+        activeForm: "Working on Task 2",
+      },
     ];
 
     const result = setTodos(todos);
@@ -82,8 +97,16 @@ Deno.test({
 
     const todos: TodoInput[] = [
       { content: "Task 1", status: "pending", activeForm: "Working on Task 1" },
-      { content: "Task 2", status: "in_progress", activeForm: "Working on Task 2" },
-      { content: "Task 3", status: "completed", activeForm: "Working on Task 3" },
+      {
+        content: "Task 2",
+        status: "in_progress",
+        activeForm: "Working on Task 2",
+      },
+      {
+        content: "Task 3",
+        status: "completed",
+        activeForm: "Working on Task 3",
+      },
     ];
 
     const result = setTodos(todos);
@@ -105,7 +128,11 @@ Deno.test({
     await resetTodos();
 
     setTodos([
-      { content: "New Task", status: "pending", activeForm: "Working on New Task" },
+      {
+        content: "New Task",
+        status: "pending",
+        activeForm: "Working on New Task",
+      },
     ]);
 
     const todos = getTodos();
@@ -132,7 +159,11 @@ Deno.test({
 
     // Update same todo
     setTodos([
-      { content: "Task 1", status: "in_progress", activeForm: "Working on Task 1" },
+      {
+        content: "Task 1",
+        status: "in_progress",
+        activeForm: "Working on Task 1",
+      },
     ]);
 
     const todos = getTodos();
@@ -436,7 +467,11 @@ Deno.test({
     await resetTodos();
 
     setTodos([
-      { content: "Active task", status: "in_progress", activeForm: "Actively working" },
+      {
+        content: "Active task",
+        status: "in_progress",
+        activeForm: "Actively working",
+      },
     ]);
 
     const output = renderTodos();

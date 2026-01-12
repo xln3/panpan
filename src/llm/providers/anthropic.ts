@@ -24,8 +24,18 @@ interface CacheControl {
 type AnthropicContentBlock =
   | { type: "text"; text: string; cache_control?: CacheControl }
   | { type: "thinking"; thinking: string }
-  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
-  | { type: "tool_result"; tool_use_id: string; content: string; is_error?: boolean };
+  | {
+    type: "tool_use";
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+  }
+  | {
+    type: "tool_result";
+    tool_use_id: string;
+    content: string;
+    is_error?: boolean;
+  };
 
 /** System content block with optional cache control */
 interface SystemContentBlock {
@@ -203,7 +213,10 @@ export class AnthropicProvider implements LLMProvider {
 
   private formatTools(tools: Tool[]): AnthropicToolDefinition[] {
     return tools.map((tool, index) => {
-      const schema = z.toJSONSchema(tool.inputSchema) as Record<string, unknown>;
+      const schema = z.toJSONSchema(tool.inputSchema) as Record<
+        string,
+        unknown
+      >;
       // Ensure schema has type: "object" - Anthropic requires this
       if (!schema.type) {
         schema.type = "object";
@@ -235,19 +248,25 @@ export class AnthropicProvider implements LLMProvider {
   private cleanupSchema(schema: Record<string, unknown>): void {
     // Handle anyOf (from discriminated unions)
     if (Array.isArray(schema.anyOf)) {
-      const merged = this.mergeSchemaVariants(schema.anyOf as Record<string, unknown>[]);
+      const merged = this.mergeSchemaVariants(
+        schema.anyOf as Record<string, unknown>[],
+      );
       delete schema.anyOf;
       Object.assign(schema, merged);
     }
     // Handle oneOf
     if (Array.isArray(schema.oneOf)) {
-      const merged = this.mergeSchemaVariants(schema.oneOf as Record<string, unknown>[]);
+      const merged = this.mergeSchemaVariants(
+        schema.oneOf as Record<string, unknown>[],
+      );
       delete schema.oneOf;
       Object.assign(schema, merged);
     }
     // Handle allOf
     if (Array.isArray(schema.allOf)) {
-      const merged = this.mergeSchemaVariants(schema.allOf as Record<string, unknown>[]);
+      const merged = this.mergeSchemaVariants(
+        schema.allOf as Record<string, unknown>[],
+      );
       delete schema.allOf;
       Object.assign(schema, merged);
     }
@@ -256,7 +275,9 @@ export class AnthropicProvider implements LLMProvider {
   /**
    * Merge multiple schema variants into a single permissive schema
    */
-  private mergeSchemaVariants(variants: Record<string, unknown>[]): Record<string, unknown> {
+  private mergeSchemaVariants(
+    variants: Record<string, unknown>[],
+  ): Record<string, unknown> {
     const merged: Record<string, unknown> = {
       type: "object",
       properties: {},

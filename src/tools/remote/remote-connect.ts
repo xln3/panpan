@@ -46,7 +46,8 @@ export const RemoteConnectTool: Tool<typeof inputSchema, ConnectOutput> = {
   ): AsyncGenerator<ToolYield<ConnectOutput>> {
     yield {
       type: "progress",
-      content: `Connecting to ${input.username}@${input.hostname}:${input.port}...`,
+      content:
+        `Connecting to ${input.username}@${input.hostname}:${input.port}...`,
     };
 
     try {

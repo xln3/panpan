@@ -27,14 +27,14 @@ export function mockFetch(
       : input.url;
 
     if (typeof responses === "function") {
-      return responses(url, init);
+      return await Promise.resolve(responses(url, init));
     }
 
     const response = responses.get(url);
     if (!response) {
       throw new Error(`No mock response for ${url}`);
     }
-    return response.clone();
+    return await Promise.resolve(response.clone());
   };
 
   return () => {

@@ -2,7 +2,7 @@
  * Tests for ClarificationHelper
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import {
   ClarificationHelper,
   clarificationHelper,
@@ -27,14 +27,19 @@ Deno.test("ClarificationHelper - analyzeRequirement detects multiple vague terms
   const result = clarificationHelper.analyzeRequirement("快速优化系统，要好用");
 
   assertEquals(result.isClear, false);
-  assertEquals(result.issues.filter((i) => i.type === "vague_term").length >= 2, true);
+  assertEquals(
+    result.issues.filter((i) => i.type === "vague_term").length >= 2,
+    true,
+  );
 });
 
 Deno.test("ClarificationHelper - analyzeRequirement detects missing test info", () => {
   const result = clarificationHelper.analyzeRequirement("实现用户登录功能");
 
   assertEquals(
-    result.issues.some((i) => i.type === "missing_info" && i.term === "测试要求"),
+    result.issues.some((i) =>
+      i.type === "missing_info" && i.term === "测试要求"
+    ),
     true,
   );
 });
@@ -54,7 +59,9 @@ Deno.test("ClarificationHelper - analyzeRequirement detects missing error handli
   const result = clarificationHelper.analyzeRequirement("实现数据导入功能");
 
   assertEquals(
-    result.issues.some((i) => i.type === "missing_info" && i.term === "错误处理"),
+    result.issues.some((i) =>
+      i.type === "missing_info" && i.term === "错误处理"
+    ),
     true,
   );
 });
@@ -103,7 +110,11 @@ Deno.test("ClarificationHelper - extractAcceptanceCriteria from basic requiremen
 Deno.test("ClarificationHelper - extractAcceptanceCriteria from QA with numbers", () => {
   const qas = [
     { question: "响应时间要求？", answer: "< 100ms", timestamp: Date.now() },
-    { question: "支持多少并发？", answer: "1000 个连接", timestamp: Date.now() },
+    {
+      question: "支持多少并发？",
+      answer: "1000 个连接",
+      timestamp: Date.now(),
+    },
   ];
 
   const criteria = clarificationHelper.extractAcceptanceCriteria(
@@ -123,7 +134,10 @@ Deno.test("ClarificationHelper - extractAcceptanceCriteria provides defaults", (
   );
 
   assertEquals(criteria.length >= 1, true);
-  assertEquals(criteria.some((c) => c.includes("编译") || c.includes("运行")), true);
+  assertEquals(
+    criteria.some((c) => c.includes("编译") || c.includes("运行")),
+    true,
+  );
 });
 
 Deno.test("ClarificationHelper - hasVagueTerm returns true for vague term", () => {

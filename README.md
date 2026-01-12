@@ -1,13 +1,17 @@
 # panpan 🐼
 
-A Deno-based CLI tool that automates ML project migration between servers using LLM-powered assistance.
+A Deno-based CLI tool that automates ML project migration between servers using
+LLM-powered assistance.
 
 ## Features
 
-- **Multi-Provider LLM Support** - Works with Anthropic Claude and OpenAI-compatible APIs
-- **20+ Built-in Tools** - File operations, shell commands, web scraping, package management
+- **Multi-Provider LLM Support** - Works with Anthropic Claude and
+  OpenAI-compatible APIs
+- **20+ Built-in Tools** - File operations, shell commands, web scraping,
+  package management
 - **Package Manager Integration** - pip, conda, uv, pixi with streaming output
-- **Interactive REPL** - Real-time streaming, ESC to abort, Ctrl+O to expand output
+- **Interactive REPL** - Real-time streaming, ESC to abort, Ctrl+O to expand
+  output
 - **Plan Mode** - Read-only exploration before making changes
 - **Web Scraping** - Playwright-based with stealth mode to bypass bot detection
 
@@ -80,13 +84,13 @@ echo "explain this code" | deno task run
 
 ## CLI Options
 
-| Option | Description |
-|--------|-------------|
-| `-m, --model <model>` | Model to use |
-| `--base-url <url>` | API base URL |
-| `--api-key <key>` | API key |
-| `-v, --verbose` | Verbose output |
-| `--thinking` | Enable extended thinking (Anthropic) |
+| Option                  | Description                            |
+| ----------------------- | -------------------------------------- |
+| `-m, --model <model>`   | Model to use                           |
+| `--base-url <url>`      | API base URL                           |
+| `--api-key <key>`       | API key                                |
+| `-v, --verbose`         | Verbose output                         |
+| `--thinking`            | Enable extended thinking (Anthropic)   |
 | `--thinking-budget <n>` | Thinking token budget (default: 10000) |
 
 ## Architecture

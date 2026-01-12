@@ -1,21 +1,27 @@
 # 模块 C: Remote 服务
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
-本模块实现 RemoteSA 的核心服务层，包括 SSH 引导、Daemon 通信、连接池管理。采用混合模式：SSH bootstrap 安装 daemon，之后通过 daemon 通信。
+本模块实现 RemoteSA 的核心服务层，包括 SSH 引导、Daemon
+通信、连接池管理。采用混合模式：SSH bootstrap 安装 daemon，之后通过 daemon
+通信。
 
 ## 设计要点
+
 - **避免重复认证**: SSH 只用于初始引导，之后通过 daemon 通信
 - **避免命令转义问题**: daemon 使用 HTTP API，不需要 shell 转义
 - **上下文隔离**: 每个命令输出都标记主机名，避免混淆本地/远程
 
 ## 依赖关系
+
 - **依赖**: 无（可立即开始）
 - **类型依赖**: `src/types/remote.ts`
 - **被依赖**: Sprint 2 的 tools/remote (G)
 
 ## 文件结构
+
 ```
 src/services/remote/
 ├── mod.ts                  # 统一导出
@@ -26,6 +32,7 @@ src/services/remote/
 ```
 
 ## 通信流程
+
 ```
 ┌──────────┐         ┌─────────────┐         ┌──────────────┐
 │  panpan  │   SSH   │   Target    │  HTTP/  │   panpan     │
@@ -51,6 +58,7 @@ src/services/remote/
 ## 详细设计
 
 ### 1. src/services/remote/daemon-binary.ts
+
 ```typescript
 /**
  * 内嵌的 daemon 源码
@@ -191,15 +199,20 @@ export function getDenoInstallCommand(): string {
 ```
 
 ### 2. src/services/remote/ssh-bootstrap.ts
+
 ```typescript
-import type { RemoteHost, DaemonInfo } from "../../types/remote.ts";
-import { DAEMON_SOURCE, getDenoCheckCommand, getDenoInstallCommand } from "./daemon-binary.ts";
+import type { DaemonInfo, RemoteHost } from "../../types/remote.ts";
+import {
+  DAEMON_SOURCE,
+  getDenoCheckCommand,
+  getDenoInstallCommand,
+} from "./daemon-binary.ts";
 
 /**
  * SSH 引导选项
  */
 export interface SSHBootstrapOptions {
-  installDeno?: boolean;  // 如果 Deno 不存在，是否安装
+  installDeno?: boolean; // 如果 Deno 不存在，是否安装
   daemonTimeout?: number; // daemon 超时时间（秒）
 }
 
@@ -217,7 +230,7 @@ export interface SSHBootstrapResult {
  */
 export async function bootstrapDaemon(
   host: RemoteHost,
-  options: SSHBootstrapOptions = {}
+  options: SSHBootstrapOptions = {},
 ): Promise<SSHBootstrapResult> {
   const { installDeno = true, daemonTimeout = 1800 } = options;
 
@@ -253,7 +266,8 @@ export async function bootstrapDaemon(
     const token = crypto.randomUUID();
 
     // 5. 启动 daemon
-    const startCmd = `nohup ~/.deno/bin/deno run --allow-all ${daemonPath} 0 ${token} ${daemonTimeout} > /tmp/panpan-daemon.log 2>&1 & sleep 1 && cat /tmp/panpan-daemon.log | grep DAEMON_STARTED`;
+    const startCmd =
+      `nohup ~/.deno/bin/deno run --allow-all ${daemonPath} 0 ${token} ${daemonTimeout} > /tmp/panpan-daemon.log 2>&1 & sleep 1 && cat /tmp/panpan-daemon.log | grep DAEMON_STARTED`;
 
     const startResult = await executeSSH(sshBase, startCmd);
     if (startResult.exitCode !== 0) {
@@ -293,9 +307,12 @@ export async function bootstrapDaemon(
  */
 function buildSSHCommand(host: RemoteHost): string[] {
   const args = [
-    "-o", "StrictHostKeyChecking=accept-new",
-    "-o", "ConnectTimeout=10",
-    "-p", String(host.port),
+    "-o",
+    "StrictHostKeyChecking=accept-new",
+    "-o",
+    "ConnectTimeout=10",
+    "-p",
+    String(host.port),
   ];
 
   if (host.authMethod === "key" && host.keyPath) {
@@ -312,7 +329,7 @@ function buildSSHCommand(host: RemoteHost): string[] {
  */
 async function executeSSH(
   sshBase: string[],
-  command: string
+  command: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const cmd = new Deno.Command(sshBase[0], {
     args: [...sshBase.slice(1), command],
@@ -336,7 +353,7 @@ async function executeSSH(
 async function uploadFile(
   host: RemoteHost,
   content: string,
-  remotePath: string
+  remotePath: string,
 ): Promise<void> {
   // 使用 cat 通过 SSH 写入文件
   const sshBase = buildSSHCommand(host);
@@ -356,8 +373,13 @@ async function uploadFile(
 ```
 
 ### 3. src/services/remote/daemon-client.ts
+
 ```typescript
-import type { RemoteExecInput, RemoteExecOutput, RemoteFileInput } from "../../types/remote.ts";
+import type {
+  RemoteExecInput,
+  RemoteExecOutput,
+  RemoteFileInput,
+} from "../../types/remote.ts";
 
 /**
  * Daemon 客户端
@@ -370,7 +392,7 @@ export class DaemonClient {
   constructor(
     hostname: string,
     port: number,
-    token: string
+    token: string,
   ) {
     this.baseUrl = `http://${hostname}:${port}`;
     this.token = token;
@@ -388,7 +410,9 @@ export class DaemonClient {
   /**
    * 执行命令
    */
-  async exec(input: Omit<RemoteExecInput, "connectionId">): Promise<RemoteExecOutput> {
+  async exec(
+    input: Omit<RemoteExecInput, "connectionId">,
+  ): Promise<RemoteExecOutput> {
     const startTime = Date.now();
     const response = await this.fetch("/exec", {
       method: "POST",
@@ -406,7 +430,7 @@ export class DaemonClient {
       stderr: result.stderr || "",
       exitCode: result.exitCode ?? -1,
       durationMs: Date.now() - startTime,
-      host: this.hostname,  // 始终标记主机名
+      host: this.hostname, // 始终标记主机名
     };
   }
 
@@ -467,7 +491,9 @@ export class DaemonClient {
 
     if (!response.ok && response.status !== 200) {
       const text = await response.text();
-      throw new Error(`[${this.hostname}] Daemon error: ${response.status} ${text}`);
+      throw new Error(
+        `[${this.hostname}] Daemon error: ${response.status} ${text}`,
+      );
     }
 
     return response;
@@ -476,8 +502,15 @@ export class DaemonClient {
 ```
 
 ### 4. src/services/remote/connection-manager.ts
+
 ```typescript
-import type { RemoteHost, RemoteConnection, DaemonInfo, RemoteExecInput, RemoteExecOutput } from "../../types/remote.ts";
+import type {
+  DaemonInfo,
+  RemoteConnection,
+  RemoteExecInput,
+  RemoteExecOutput,
+  RemoteHost,
+} from "../../types/remote.ts";
 import { bootstrapDaemon, type SSHBootstrapOptions } from "./ssh-bootstrap.ts";
 import { DaemonClient } from "./daemon-client.ts";
 
@@ -495,9 +528,10 @@ class ConnectionManager {
    */
   async connect(
     host: RemoteHost,
-    options?: SSHBootstrapOptions
+    options?: SSHBootstrapOptions,
   ): Promise<string> {
-    const connectionId = host.id || `${host.username}@${host.hostname}:${host.port}`;
+    const connectionId = host.id ||
+      `${host.username}@${host.hostname}:${host.port}`;
 
     // 检查是否已连接
     const existing = this.connections.get(connectionId);
@@ -527,7 +561,7 @@ class ConnectionManager {
       const client = new DaemonClient(
         host.hostname,
         result.daemonInfo.port,
-        result.daemonInfo.token
+        result.daemonInfo.token,
       );
 
       // 验证连接
@@ -555,7 +589,7 @@ class ConnectionManager {
    */
   async execute(
     connectionId: string,
-    input: Omit<RemoteExecInput, "connectionId">
+    input: Omit<RemoteExecInput, "connectionId">,
   ): Promise<RemoteExecOutput> {
     const entry = this.connections.get(connectionId);
     if (!entry?.client) {
@@ -563,7 +597,9 @@ class ConnectionManager {
     }
 
     if (entry.connection.status !== "ready") {
-      throw new Error(`Connection not ready: ${connectionId} (${entry.connection.status})`);
+      throw new Error(
+        `Connection not ready: ${connectionId} (${entry.connection.status})`,
+      );
     }
 
     entry.connection.lastActivity = Date.now();
@@ -586,7 +622,11 @@ class ConnectionManager {
   /**
    * 写入远程文件
    */
-  async writeFile(connectionId: string, path: string, content: string): Promise<void> {
+  async writeFile(
+    connectionId: string,
+    path: string,
+    content: string,
+  ): Promise<void> {
     const entry = this.connections.get(connectionId);
     if (!entry?.client) {
       throw new Error(`Connection not found: ${connectionId}`);
@@ -651,16 +691,22 @@ export const connectionManager = new ConnectionManager();
 ```
 
 ### 5. src/services/remote/mod.ts
+
 ```typescript
 export { connectionManager } from "./connection-manager.ts";
 export { DaemonClient } from "./daemon-client.ts";
-export { bootstrapDaemon, type SSHBootstrapOptions, type SSHBootstrapResult } from "./ssh-bootstrap.ts";
+export {
+  bootstrapDaemon,
+  type SSHBootstrapOptions,
+  type SSHBootstrapResult,
+} from "./ssh-bootstrap.ts";
 export { DAEMON_SOURCE, DAEMON_VERSION } from "./daemon-binary.ts";
 ```
 
 ## 终点状态（验收标准）
 
 ### 必须满足
+
 - [ ] 能通过 SSH 连接到远程服务器并启动 daemon
 - [ ] daemon 能响应 /health, /exec, /file/read, /file/write, /shutdown
 - [ ] connectionManager 能管理多个连接
@@ -668,6 +714,7 @@ export { DAEMON_SOURCE, DAEMON_VERSION } from "./daemon-binary.ts";
 - [ ] daemon 超时后能自动关闭
 
 ### 测试场景
+
 ```typescript
 // 1. 连接测试（需要可用的 SSH 服务器）
 const host: RemoteHost = {
@@ -687,7 +734,7 @@ const result = await connectionManager.execute(connectionId, {
   command: "echo 'hello world'",
 });
 assert(result.stdout.includes("hello world"));
-assert(result.host === "localhost");  // 输出包含主机名
+assert(result.host === "localhost"); // 输出包含主机名
 
 // 3. 文件操作
 await connectionManager.writeFile(connectionId, "/tmp/test.txt", "content");
@@ -699,6 +746,7 @@ await connectionManager.disconnect(connectionId);
 ```
 
 ### 交付物
+
 1. `src/services/remote/daemon-binary.ts` - daemon 源码
 2. `src/services/remote/ssh-bootstrap.ts` - SSH 引导逻辑
 3. `src/services/remote/daemon-client.ts` - daemon HTTP 客户端
@@ -706,4 +754,5 @@ await connectionManager.disconnect(connectionId);
 5. `src/services/remote/mod.ts` - 统一导出
 
 ## 预估时间
+
 3 天

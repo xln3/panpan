@@ -2,7 +2,7 @@
  * Tests for RequirementsManager
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import { RequirementsManager } from "../../../src/services/pm/requirements.ts";
 
 Deno.test("RequirementsManager - create generates unique ID", () => {

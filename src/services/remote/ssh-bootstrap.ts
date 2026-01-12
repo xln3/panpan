@@ -3,7 +3,7 @@
  * Handles SSH connection, Deno installation check, daemon deployment.
  */
 
-import type { RemoteHost, DaemonInfo } from "../../types/remote.ts";
+import type { DaemonInfo, RemoteHost } from "../../types/remote.ts";
 import {
   DAEMON_SOURCE,
   DAEMON_VERSION,
@@ -44,7 +44,7 @@ export interface SSHBootstrapResult {
  */
 export async function bootstrapDaemon(
   host: RemoteHost,
-  options: SSHBootstrapOptions = {}
+  options: SSHBootstrapOptions = {},
 ): Promise<SSHBootstrapResult> {
   const {
     installDeno = true,
@@ -97,7 +97,9 @@ export async function bootstrapDaemon(
     if (startResult.exitCode !== 0) {
       return {
         success: false,
-        error: `Failed to start daemon: ${startResult.stderr || startResult.stdout}`,
+        error: `Failed to start daemon: ${
+          startResult.stderr || startResult.stdout
+        }`,
       };
     }
 
@@ -106,11 +108,16 @@ export async function bootstrapDaemon(
     if (!match) {
       return {
         success: false,
-        error: `Failed to parse daemon startup info. Output: ${startResult.stdout}`,
+        error:
+          `Failed to parse daemon startup info. Output: ${startResult.stdout}`,
       };
     }
 
-    const parsed = JSON.parse(match[1]) as { port: number; token: string; pid: number };
+    const parsed = JSON.parse(match[1]) as {
+      port: number;
+      token: string;
+      pid: number;
+    };
     const daemonInfo: DaemonInfo = {
       version: DAEMON_VERSION,
       pid: parsed.pid,
@@ -136,10 +143,14 @@ export async function bootstrapDaemon(
  */
 function buildSSHCommand(host: RemoteHost, timeout: number): string[] {
   const args = [
-    "-o", "StrictHostKeyChecking=accept-new",
-    "-o", "BatchMode=yes",
-    "-o", `ConnectTimeout=${timeout}`,
-    "-p", String(host.port),
+    "-o",
+    "StrictHostKeyChecking=accept-new",
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    `ConnectTimeout=${timeout}`,
+    "-p",
+    String(host.port),
   ];
 
   if (host.authMethod === "key" && host.keyPath) {
@@ -158,7 +169,7 @@ function buildSSHCommand(host: RemoteHost, timeout: number): string[] {
  */
 async function executeSSH(
   sshBase: string[],
-  command: string
+  command: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const cmd = new Deno.Command(sshBase[0], {
     args: [...sshBase.slice(1), command],
@@ -182,7 +193,7 @@ async function uploadFile(
   host: RemoteHost,
   content: string,
   remotePath: string,
-  timeout: number
+  timeout: number,
 ): Promise<void> {
   const sshBase = buildSSHCommand(host, timeout);
 
@@ -211,7 +222,7 @@ async function uploadFile(
 export async function killRemoteDaemon(
   host: RemoteHost,
   pid: number,
-  sshTimeout = 10
+  sshTimeout = 10,
 ): Promise<void> {
   const sshBase = buildSSHCommand(host, sshTimeout);
   await executeSSH(sshBase, `kill ${pid} 2>/dev/null || true`);

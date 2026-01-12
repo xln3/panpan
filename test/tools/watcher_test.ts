@@ -2,16 +2,22 @@
  * Tests for Watcher Tools
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "jsr:@std/assert@1";
-import { WatcherStatusTool, WatcherListTool } from "../../src/tools/watcher/watcher-status.ts";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import {
+  WatcherListTool,
+  WatcherStatusTool,
+} from "../../src/tools/watcher/watcher-status.ts";
 import { WatcherAlertTool } from "../../src/tools/watcher/watcher-alert.ts";
-import { monitorRegistry, alertManager } from "../../src/services/watcher/mod.ts";
+import {
+  alertManager,
+  monitorRegistry,
+} from "../../src/services/watcher/mod.ts";
 import { collectGenerator, createMockToolContext } from "../_helpers/mod.ts";
 import type { ToolYield } from "../../src/types/tool.ts";
 
 // Type helper
 function getResultData<T>(results: ToolYield<T>[]): T {
-  const result = results.find(r => r.type === "result");
+  const result = results.find((r) => r.type === "result");
   if (!result || result.type !== "result") {
     throw new Error("Expected result type");
   }
@@ -224,7 +230,11 @@ Deno.test("WatcherAlertTool - remove action deletes alert config", async () => {
   });
 
   const results = await collectGenerator(
-    WatcherAlertTool.call({ action: "remove", alert_id: "to-remove", cooldown: 60000 }, context),
+    WatcherAlertTool.call({
+      action: "remove",
+      alert_id: "to-remove",
+      cooldown: 60000,
+    }, context),
   );
 
   const data = getResultData(results);
@@ -237,7 +247,11 @@ Deno.test("WatcherAlertTool - remove action handles nonexistent alert", async ()
   const context = createMockToolContext();
 
   const results = await collectGenerator(
-    WatcherAlertTool.call({ action: "remove", alert_id: "nonexistent", cooldown: 60000 }, context),
+    WatcherAlertTool.call({
+      action: "remove",
+      alert_id: "nonexistent",
+      cooldown: 60000,
+    }, context),
   );
 
   const data = getResultData(results);
@@ -337,8 +351,20 @@ Deno.test("WatcherStatusTool - renderResultForAssistant returns summary", () => 
 Deno.test("WatcherListTool - renderResultForAssistant shows count", () => {
   const output = {
     monitors: [
-      { id: "cpu", type: "cpu" as const, name: "CPU", description: "", available: true },
-      { id: "gpu", type: "gpu" as const, name: "GPU", description: "", available: false },
+      {
+        id: "cpu",
+        type: "cpu" as const,
+        name: "CPU",
+        description: "",
+        available: true,
+      },
+      {
+        id: "gpu",
+        type: "gpu" as const,
+        name: "GPU",
+        description: "",
+        available: false,
+      },
     ],
   };
   const result = WatcherListTool.renderResultForAssistant(output);

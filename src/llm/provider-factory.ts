@@ -2,7 +2,11 @@
  * Provider factory and detection
  */
 
-import type { LLMProvider, ProviderConfig, ProviderType } from "../types/provider.ts";
+import type {
+  LLMProvider,
+  ProviderConfig,
+  ProviderType,
+} from "../types/provider.ts";
 import { OpenAIProvider } from "./providers/openai.ts";
 import { AnthropicProvider } from "./providers/anthropic.ts";
 

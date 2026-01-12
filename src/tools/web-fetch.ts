@@ -127,7 +127,7 @@ export const WebFetchTool: Tool<typeof inputSchema, Output> = {
       // then wait for content separately
       const response = await Promise.race([
         page.goto(url, {
-          waitUntil: "commit",  // Fast initial response
+          waitUntil: "commit", // Fast initial response
           timeout: TIMEOUT,
         }),
         timeoutPromise,
@@ -507,8 +507,10 @@ async function simulateHumanBehavior(
     // Generate random mouse movements (3-5 movements)
     const numMoves = 3 + Math.floor(Math.random() * 3);
     for (let i = 0; i < numMoves; i++) {
-      const x = Math.floor(Math.random() * viewport.width * 0.8) + viewport.width * 0.1;
-      const y = Math.floor(Math.random() * viewport.height * 0.8) + viewport.height * 0.1;
+      const x = Math.floor(Math.random() * viewport.width * 0.8) +
+        viewport.width * 0.1;
+      const y = Math.floor(Math.random() * viewport.height * 0.8) +
+        viewport.height * 0.1;
 
       // Move with slight randomization in steps
       await page.mouse.move(x, y, {
@@ -523,6 +525,7 @@ async function simulateHumanBehavior(
     const scrollAmount = Math.floor(Math.random() * 300) + 100;
     await page.evaluate((amount: number) => {
       // @ts-ignore - scrollBy exists in browser context
+      // deno-lint-ignore no-window
       window.scrollBy({ top: amount, behavior: "smooth" });
     }, scrollAmount);
 
@@ -532,6 +535,7 @@ async function simulateHumanBehavior(
     // Scroll back up slightly
     await page.evaluate((amount: number) => {
       // @ts-ignore - scrollBy exists in browser context
+      // deno-lint-ignore no-window
       window.scrollBy({ top: -amount / 2, behavior: "smooth" });
     }, scrollAmount);
   } catch {

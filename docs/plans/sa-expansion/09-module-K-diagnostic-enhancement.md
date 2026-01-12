@@ -1,13 +1,16 @@
 # 模块 K: 包管理工具诊断增强
 
 ## 整体背景
+
 > 本模块是 SA 扩展项目的一部分。完整架构见 `00-overview.md`。
 
-本模块在现有的包管理工具（pip, conda, uv, pixi）中集成诊断逻辑，实现自动重试和镜像切换，解决 agent "甩锅给用户"的问题。
+本模块在现有的包管理工具（pip, conda, uv,
+pixi）中集成诊断逻辑，实现自动重试和镜像切换，解决 agent "甩锅给用户"的问题。
 
 ## 问题背景
 
 当前行为（坏的）:
+
 ```
 pip install torch
 → ReadTimeoutError: HTTPSConnectionPool - Read timed out
@@ -15,6 +18,7 @@ pip install torch
 ```
 
 期望行为（好的）:
+
 ```
 pip install torch
 → ReadTimeoutError (第1次尝试)
@@ -24,6 +28,7 @@ pip install torch
 ```
 
 ## 依赖关系
+
 - **依赖**: B (diagnostics) - `src/utils/diagnostics/`
 - **被依赖**: 无（终端模块）
 
@@ -80,14 +85,14 @@ src/tools/package-managers/
 
 ```typescript
 import {
+  applyFix,
   classifyError,
   createRetryContext,
-  shouldRetry,
-  applyFix,
-  updateRetryContext,
   type RetryContext,
+  shouldRetry,
+  updateRetryContext,
 } from "../../utils/diagnostics/mod.ts";
-import { executeCommandStreaming, type CommandResult } from "./common.ts";
+import { type CommandResult, executeCommandStreaming } from "./common.ts";
 
 /**
  * 诊断执行配置
@@ -140,21 +145,25 @@ export async function* executeWithDiagnostics(
     if (retryContext.attempt > 0) {
       yield {
         type: "progress",
-        message: `重试 #${retryContext.attempt + 1}: ${currentCommand.join(" ")}`,
+        message: `重试 #${retryContext.attempt + 1}: ${
+          currentCommand.join(" ")
+        }`,
       };
     }
 
     // ========== 2. 执行当前命令 ==========
-    for await (const item of executeCommandStreaming(
-      currentCommand,
-      cwd,
-      timeout,
-      abortController,
-    )) {
+    for await (
+      const item of executeCommandStreaming(
+        currentCommand,
+        cwd,
+        timeout,
+        abortController,
+      )
+    ) {
       if ("stream" in item) {
-        yield item;  // 流式输出
+        yield item; // 流式输出
       } else {
-        lastResult = item;  // 最终结果
+        lastResult = item; // 最终结果
       }
     }
 
@@ -171,7 +180,7 @@ export async function* executeWithDiagnostics(
     // ========== 4. 失败则诊断 ==========
     const diagnosis = await classifyError(
       lastResult?.stderr || "",
-      { tool: config.tool }
+      { tool: config.tool },
     );
 
     // ========== 5. 判断是否可重试 ==========
@@ -266,8 +275,10 @@ export const MIRROR_CONFIGS: Record<string, MirrorConfig> = {
   pip: {
     service: "pypi",
     getMirrorArgs: (url) => [
-      "-i", url,
-      "--trusted-host", new URL(url).hostname,
+      "-i",
+      url,
+      "--trusted-host",
+      new URL(url).hostname,
     ],
   },
 
@@ -320,8 +331,8 @@ import {
   TIMEOUTS,
 } from "./common.ts";
 import {
-  executeWithDiagnostics,
   type DiagnosticResult,
+  executeWithDiagnostics,
 } from "./diagnostic-executor.ts";
 import { MIRROR_CONFIGS } from "./mirror-configs.ts";
 
@@ -335,7 +346,8 @@ interface Output extends CommandResult {
 
 export const PipTool: Tool<typeof inputSchema, Output> = {
   name: "Pip",
-  description: `Python package manager with automatic retry and mirror switching.
+  description:
+    `Python package manager with automatic retry and mirror switching.
 
 Operations:
 - install: Install packages (auto-retries with mirrors on timeout)
@@ -359,7 +371,10 @@ Features:
     return ["list", "freeze", "show"].includes(input.operation);
   },
 
-  async *call(input: Input, context: ToolContext): AsyncGenerator<ToolYield<Output>> {
+  async *call(
+    input: Input,
+    context: ToolContext,
+  ): AsyncGenerator<ToolYield<Output>> {
     const timeout = getTimeout(input.operation);
     const cmd = buildCommand(input);
 
@@ -369,9 +384,14 @@ Features:
     if (isReadOnly) {
       // 使用原有的简单执行逻辑
       let result: CommandResult | undefined;
-      for await (const item of executeCommandStreaming(
-        cmd, context.cwd, timeout, context.abortController
-      )) {
+      for await (
+        const item of executeCommandStreaming(
+          cmd,
+          context.cwd,
+          timeout,
+          context.abortController,
+        )
+      ) {
         if ("stream" in item) {
           yield { type: "streaming_output", line: item };
         } else {
@@ -381,7 +401,14 @@ Features:
 
       const output: Output = {
         operation: input.operation,
-        ...(result || { stdout: "", stderr: "", exitCode: -1, durationMs: 0, timedOut: false }),
+        ...(result ||
+          {
+            stdout: "",
+            stderr: "",
+            exitCode: -1,
+            durationMs: 0,
+            timedOut: false,
+          }),
       };
 
       yield {
@@ -399,17 +426,19 @@ Features:
 
     let result: DiagnosticResult | undefined;
 
-    for await (const item of executeWithDiagnostics(
-      cmd,
-      context.cwd,
-      timeout,
-      context.abortController,
-      {
-        tool: "pip",
-        maxAttempts: 3,
-        getMirrorArgs: MIRROR_CONFIGS.pip.getMirrorArgs,
-      },
-    )) {
+    for await (
+      const item of executeWithDiagnostics(
+        cmd,
+        context.cwd,
+        timeout,
+        context.abortController,
+        {
+          tool: "pip",
+          maxAttempts: 3,
+          getMirrorArgs: MIRROR_CONFIGS.pip.getMirrorArgs,
+        },
+      )
+    ) {
       if ("stream" in item) {
         yield { type: "streaming_output", line: item };
       } else if ("type" in item && item.type === "progress") {
@@ -458,22 +487,21 @@ Features:
     }
     return result;
   },
-
   // ... renderToolUseMessage 保持不变 ...
 };
 ```
 
 ## 错误类型与修复策略
 
-| 错误类型 | 自动修复 | 修复策略 |
-|---------|---------|---------|
-| timeout | ✅ | 1. 应用已配置代理 2. 尝试镜像 3. 增加超时 |
-| dns | ❌ | 需要用户检查网络/DNS |
-| ssl | ⚠️ | 可尝试 --trusted-host，但需谨慎 |
-| http_4xx | ❌ | 需要用户提供认证 |
-| http_5xx | ✅ | 等待后重试 + 尝试镜像 |
-| permission | ❌ | 需要用户处理权限 |
-| disk_full | ❌ | 需要用户清理磁盘 |
+| 错误类型   | 自动修复 | 修复策略                                  |
+| ---------- | -------- | ----------------------------------------- |
+| timeout    | ✅       | 1. 应用已配置代理 2. 尝试镜像 3. 增加超时 |
+| dns        | ❌       | 需要用户检查网络/DNS                      |
+| ssl        | ⚠️       | 可尝试 --trusted-host，但需谨慎           |
+| http_4xx   | ❌       | 需要用户提供认证                          |
+| http_5xx   | ✅       | 等待后重试 + 尝试镜像                     |
+| permission | ❌       | 需要用户处理权限                          |
+| disk_full  | ❌       | 需要用户清理磁盘                          |
 
 ## 执行流程示例
 
@@ -498,6 +526,7 @@ Features:
 ## 终点状态（验收标准）
 
 ### 必须满足
+
 - [ ] pip install 超时时自动尝试清华镜像
 - [ ] conda install 超时时自动尝试镜像
 - [ ] uv pip install 超时时自动尝试镜像
@@ -507,6 +536,7 @@ Features:
 - [ ] 只读操作（list/freeze/show）不触发重试逻辑
 
 ### 测试场景
+
 ```typescript
 // 1. 模拟超时场景
 // 设置一个会超时的 mock 服务器
@@ -525,6 +555,7 @@ assert(listResult.attempts === undefined);
 ```
 
 ### 交付物
+
 1. `src/tools/package-managers/diagnostic-executor.ts` - 诊断执行器
 2. `src/tools/package-managers/mirror-configs.ts` - 镜像配置
 3. `src/tools/package-managers/pip.ts` - 修改后的 pip 工具
@@ -533,4 +564,5 @@ assert(listResult.attempts === undefined);
 6. `src/tools/package-managers/pixi.ts` - 修改后的 pixi 工具
 
 ## 预估时间
+
 2 天

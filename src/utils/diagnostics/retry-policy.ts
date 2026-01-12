@@ -59,7 +59,7 @@ export function createRetryContext(): RetryContext {
 export function shouldRetry(
   context: RetryContext,
   diagnosis: ErrorDiagnosis,
-  config: RetryConfig = DEFAULT_CONFIG
+  config: RetryConfig = DEFAULT_CONFIG,
 ): { shouldRetry: boolean; nextFix?: Fix; delayMs: number } {
   // Max attempts reached
   if (context.attempt >= config.maxAttempts) {
@@ -73,7 +73,7 @@ export function shouldRetry(
 
   // Find next untried fix
   const nextFix = diagnosis.suggestedFixes.find(
-    (fix) => !context.appliedFixes.includes(fix.id)
+    (fix) => !context.appliedFixes.includes(fix.id),
   );
 
   if (!nextFix) {
@@ -83,7 +83,7 @@ export function shouldRetry(
   // Calculate delay with exponential backoff
   const delayMs = Math.min(
     config.initialDelayMs * Math.pow(config.backoffMultiplier, context.attempt),
-    config.maxDelayMs
+    config.maxDelayMs,
   );
 
   return { shouldRetry: true, nextFix, delayMs };
@@ -138,7 +138,7 @@ export function updateRetryContext(
   context: RetryContext,
   fix: Fix,
   durationMs: number,
-  diagnosis?: ErrorDiagnosis
+  diagnosis?: ErrorDiagnosis,
 ): RetryContext {
   return {
     attempt: context.attempt + 1,
@@ -156,7 +156,9 @@ export function getRetrySummary(context: RetryContext): string {
     return "未进行重试";
   }
 
-  return `已尝试 ${context.attempt} 次，应用的修复: ${context.appliedFixes.join(", ")}`;
+  return `已尝试 ${context.attempt} 次，应用的修复: ${
+    context.appliedFixes.join(", ")
+  }`;
 }
 
 // ============ withRetry Higher-Order Function ============
@@ -184,9 +186,16 @@ export interface WithRetryOptions {
   /** Custom function to determine if execution failed */
   isFailed?: (result: ExecutionResult) => boolean;
   /** Callback before each retry (for logging/UI) */
-  onRetry?: (fix: Fix, attempt: number, delayMs: number) => void | Promise<void>;
+  onRetry?: (
+    fix: Fix,
+    attempt: number,
+    delayMs: number,
+  ) => void | Promise<void>;
   /** Callback when retry is exhausted */
-  onExhausted?: (context: RetryContext, lastDiagnosis: ErrorDiagnosis) => void | Promise<void>;
+  onExhausted?: (
+    context: RetryContext,
+    lastDiagnosis: ErrorDiagnosis,
+  ) => void | Promise<void>;
 }
 
 /**
@@ -225,7 +234,7 @@ export interface WithRetryResult {
  */
 export async function withRetry(
   execute: () => Promise<ExecutionResult>,
-  options: WithRetryOptions = {}
+  options: WithRetryOptions = {},
 ): Promise<WithRetryResult> {
   const {
     context,
@@ -254,7 +263,7 @@ export async function withRetry(
     const { shouldRetry: retry, nextFix, delayMs } = shouldRetry(
       retryContext,
       diagnosis,
-      config
+      config,
     );
 
     if (!retry || !nextFix) {
@@ -271,7 +280,12 @@ export async function withRetry(
 
     // Apply the fix
     applyFix(nextFix, context);
-    retryContext = updateRetryContext(retryContext, nextFix, durationMs, diagnosis);
+    retryContext = updateRetryContext(
+      retryContext,
+      nextFix,
+      durationMs,
+      diagnosis,
+    );
 
     // Notify callback
     if (onRetry) {
@@ -321,7 +335,7 @@ export interface RetryProgressEvent {
  */
 export async function* withRetryStreaming(
   execute: () => Promise<ExecutionResult>,
-  options: Omit<WithRetryOptions, "onRetry" | "onExhausted"> = {}
+  options: Omit<WithRetryOptions, "onRetry" | "onExhausted"> = {},
 ): AsyncGenerator<RetryProgressEvent, WithRetryResult> {
   const {
     context,
@@ -344,7 +358,7 @@ export async function* withRetryStreaming(
     const { shouldRetry: retry, nextFix, delayMs } = shouldRetry(
       retryContext,
       diagnosis,
-      config
+      config,
     );
 
     if (!retry || !nextFix) {
@@ -361,7 +375,12 @@ export async function* withRetryStreaming(
     }
 
     applyFix(nextFix, context);
-    retryContext = updateRetryContext(retryContext, nextFix, durationMs, diagnosis);
+    retryContext = updateRetryContext(
+      retryContext,
+      nextFix,
+      durationMs,
+      diagnosis,
+    );
 
     yield {
       type: "retry_start",

@@ -2,12 +2,12 @@
  * Tests for src/core/tool-executor.ts
  */
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import { z } from "zod";
 import { ToolExecutor } from "../../src/core/tool-executor.ts";
-import { createMockToolContext, collectGenerator } from "../_helpers/mod.ts";
+import { collectGenerator, createMockToolContext } from "../_helpers/mod.ts";
 import type { Tool, ToolContext, ToolYield } from "../../src/types/tool.ts";
-import type { ContentBlock, Message, UserMessage } from "../../src/types/message.ts";
+import type { ContentBlock, UserMessage } from "../../src/types/message.ts";
 
 // =============================================================================
 // Mock tool factory
@@ -18,7 +18,10 @@ function createMockTool<T>(
   options: {
     isReadOnly?: boolean;
     isConcurrencySafe?: boolean;
-    validateInput?: (input: T, context: ToolContext) => Promise<{ result: boolean; message?: string }>;
+    validateInput?: (
+      input: T,
+      context: ToolContext,
+    ) => Promise<{ result: boolean; message?: string }>;
     callResult?: unknown;
     callError?: Error;
     callDelay?: number;
@@ -33,7 +36,7 @@ function createMockTool<T>(
     isReadOnly: () => options.isReadOnly ?? true,
     isConcurrencySafe: () => options.isConcurrencySafe ?? true,
     validateInput: options.validateInput,
-    async *call(_input, context): AsyncGenerator<ToolYield<unknown>> {
+    async *call(_input, _context): AsyncGenerator<ToolYield<unknown>> {
       if (options.callDelay) {
         await new Promise((r) => setTimeout(r, options.callDelay));
       }
@@ -43,14 +46,20 @@ function createMockTool<T>(
       yield {
         type: "result",
         data: options.callResult ?? { success: true },
-        resultForAssistant: JSON.stringify(options.callResult ?? { success: true }),
+        resultForAssistant: JSON.stringify(
+          options.callResult ?? { success: true },
+        ),
       };
     },
     renderResultForAssistant: (output) => JSON.stringify(output),
   } as Tool;
 }
 
-function createToolUseBlock(id: string, name: string, input: Record<string, unknown> = {}): ContentBlock {
+function createToolUseBlock(
+  id: string,
+  name: string,
+  input: Record<string, unknown> = {},
+): ContentBlock {
   return {
     type: "tool_use",
     id,
@@ -114,7 +123,10 @@ Deno.test("ToolExecutor - returns error for unknown tool", async () => {
   const content = msg.message.content as ContentBlock[];
   assertEquals(content[0].type, "tool_result");
   assertEquals((content[0] as { is_error?: boolean }).is_error, true);
-  assertEquals((content[0] as { content: string }).content.includes("Unknown tool"), true);
+  assertEquals(
+    (content[0] as { content: string }).content.includes("Unknown tool"),
+    true,
+  );
 });
 
 // =============================================================================
@@ -147,12 +159,16 @@ Deno.test("ToolExecutor - validates input against schema", async () => {
   const content = msg.message.content as ContentBlock[];
 
   assertEquals((content[0] as { is_error?: boolean }).is_error, true);
-  assertEquals((content[0] as { content: string }).content.includes("Validation error"), true);
+  assertEquals(
+    (content[0] as { content: string }).content.includes("Validation error"),
+    true,
+  );
 });
 
 Deno.test("ToolExecutor - calls custom validateInput", async () => {
   const tool = createMockTool("ValidatedTool", {
     validateInput: async (input) => {
+      await Promise.resolve();
       if ((input as { value?: string }).value === "invalid") {
         return { result: false, message: "Value cannot be 'invalid'" };
       }
@@ -172,7 +188,12 @@ Deno.test("ToolExecutor - calls custom validateInput", async () => {
   const content = msg.message.content as ContentBlock[];
 
   assertEquals((content[0] as { is_error?: boolean }).is_error, true);
-  assertEquals((content[0] as { content: string }).content.includes("Value cannot be 'invalid'"), true);
+  assertEquals(
+    (content[0] as { content: string }).content.includes(
+      "Value cannot be 'invalid'",
+    ),
+    true,
+  );
 });
 
 // =============================================================================
@@ -224,7 +245,11 @@ Deno.test("ToolExecutor - runs concurrent tools in parallel", async () => {
 Deno.test("ToolExecutor - runs non-concurrent tools sequentially", async () => {
   const executionOrder: string[] = [];
 
-  const createTrackedTool = (name: string, delay: number, concurrent: boolean) => ({
+  const createTrackedTool = (
+    name: string,
+    delay: number,
+    concurrent: boolean,
+  ) => ({
     name,
     description: `Tool ${name}`,
     inputSchema: z.object({}),
@@ -354,8 +379,10 @@ Deno.test({
     // even though Tool2 finishes first
     assertEquals(results.length, 2);
 
-    const content1 = (results[0] as UserMessage).message.content as ContentBlock[];
-    const content2 = (results[1] as UserMessage).message.content as ContentBlock[];
+    const content1 = (results[0] as UserMessage).message
+      .content as ContentBlock[];
+    const content2 = (results[1] as UserMessage).message
+      .content as ContentBlock[];
 
     assertEquals((content1[0] as { tool_use_id: string }).tool_use_id, "id-1");
     assertEquals((content2[0] as { tool_use_id: string }).tool_use_id, "id-2");
@@ -384,7 +411,12 @@ Deno.test("ToolExecutor - catches tool execution errors", async () => {
   const content = (results[0] as UserMessage).message.content as ContentBlock[];
 
   assertEquals((content[0] as { is_error?: boolean }).is_error, true);
-  assertEquals((content[0] as { content: string }).content.includes("Something went wrong"), true);
+  assertEquals(
+    (content[0] as { content: string }).content.includes(
+      "Something went wrong",
+    ),
+    true,
+  );
 });
 
 Deno.test("ToolExecutor - marks error results with is_error", async () => {

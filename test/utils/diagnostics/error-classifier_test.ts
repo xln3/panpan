@@ -2,7 +2,7 @@
  * Tests for diagnostics module - error classification
  */
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
+import { assertEquals, assertExists } from "@std/assert";
 import { classifyError } from "../../../src/utils/diagnostics/error-classifier.ts";
 
 Deno.test("classifyError - identifies timeout errors", async () => {
@@ -97,14 +97,14 @@ Deno.test("classifyError - returns unknown for unrecognized errors", async () =>
 Deno.test("classifyError - suggests mirrors for pip timeout", async () => {
   const diagnosis = await classifyError(
     "ReadTimeoutError: HTTPSConnectionPool - Read timed out",
-    { tool: "pip" }
+    { tool: "pip" },
   );
 
   assertEquals(diagnosis.type, "timeout");
   assertEquals(diagnosis.autoFixable, true);
 
   // Should suggest PyPI mirrors
-  const mirrorFix = diagnosis.suggestedFixes.find(f =>
+  const mirrorFix = diagnosis.suggestedFixes.find((f) =>
     f.action.type === "use_mirror"
   );
   assertExists(mirrorFix);
