@@ -20,6 +20,7 @@ import {
   createBackgroundTask,
   generateTaskId,
 } from "../utils/background-tasks.ts";
+import { loggerService } from "../services/mod.ts";
 
 const inputSchema = z.object({
   description: z
@@ -165,8 +166,11 @@ Usage:
         prompt,
       );
 
+      const hooks = loggerService.getHooks();
+
       // Start background execution
       (async () => {
+        hooks.onSAInvoke(subagent_type, prompt);
         try {
           const result = await runSubagent(
             prompt,
@@ -176,8 +180,10 @@ Usage:
             context.cwd,
             context.llmConfig,
           );
+          hooks.onSAComplete(subagent_type, result);
           markComplete(result);
         } catch (error) {
+          hooks.onToolError(`SA:${subagent_type}`, error instanceof Error ? error : new Error(String(error)));
           markComplete(
             undefined,
             error instanceof Error ? error.message : String(error),
@@ -198,6 +204,9 @@ Usage:
       // Synchronous execution
       yield { type: "progress", content: `Running ${subagent_type} agent...` };
 
+      const hooks = loggerService.getHooks();
+      hooks.onSAInvoke(subagent_type, prompt);
+
       try {
         const result = await runSubagent(
           prompt,
@@ -208,6 +217,8 @@ Usage:
           context.llmConfig,
         );
 
+        hooks.onSAComplete(subagent_type, result);
+
         yield {
           type: "result",
           data: {
@@ -217,6 +228,8 @@ Usage:
           },
         };
       } catch (error) {
+        hooks.onToolError(`SA:${subagent_type}`, error instanceof Error ? error : new Error(String(error)));
+
         yield {
           type: "result",
           data: {

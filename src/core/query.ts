@@ -14,6 +14,7 @@ import {
 import { ToolExecutor } from "./tool-executor.ts";
 import { getPlanFilePath, isPlanMode } from "../utils/plan-mode.ts";
 import { getReminderContents } from "../services/system-reminder.ts";
+import { loggerService } from "../services/mod.ts";
 import type { LLMConfig } from "../types/llm.ts";
 import type { OutputDisplayController } from "../ui/output-display.ts";
 
@@ -68,11 +69,17 @@ export async function* query(
   llmClient: LLMClient,
   context: QueryContext,
 ): AsyncGenerator<Message> {
+  // Get logger hooks for tracing
+  const hooks = loggerService.getHooks();
+
   // Check for abort before starting
   if (context.abortController.signal.aborted) {
     // Don't yield message - the interrupt handler already showed "[Interrupted]"
     return;
   }
+
+  // Log query start
+  hooks.onQueryStart(messages);
 
   // Convert messages to API format
   const apiMessages = normalizeMessagesForAPI(messages);
@@ -86,6 +93,9 @@ export async function* query(
     ...(planModePrompt ? [planModePrompt] : []),
     ...reminderContents,
   ];
+
+  // Log LLM request
+  hooks.onLLMRequest(apiMessages, fullSystemPrompt);
 
   // Call LLM
   const startTime = Date.now();
@@ -108,6 +118,9 @@ export async function* query(
 
   const durationMs = Date.now() - startTime;
 
+  // Log LLM response
+  hooks.onLLMResponse(response, durationMs);
+
   // Check for abort after LLM response
   if (context.abortController.signal.aborted) {
     // Don't yield message - the interrupt handler already showed "[Interrupted]"
@@ -120,6 +133,7 @@ export async function* query(
 
   // No tool calls - we're done
   if (toolUseBlocks.length === 0) {
+    hooks.onQueryEnd(assistantMessage);
     yield assistantMessage;
     return;
   }

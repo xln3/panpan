@@ -8,6 +8,7 @@ import type { ContentBlock, Message } from "../types/message.ts";
 import { createUserMessage } from "./messages.ts";
 import { isPlanMode, isToolAllowedInPlanMode } from "../utils/plan-mode.ts";
 import { emitReminderEvent } from "../services/system-reminder.ts";
+import { loggerService } from "../services/mod.ts";
 
 interface QueueEntry {
   id: string;
@@ -134,6 +135,7 @@ export class ToolExecutor {
     }
 
     const tool = this.tools.find((t) => t.name === block.name);
+    const hooks = loggerService.getHooks();
 
     // Unknown tool
     if (!tool) {
@@ -224,9 +226,11 @@ export class ToolExecutor {
     }
 
     // Execute tool
+    hooks.onToolStart(block.name, parseResult.data);
     try {
       for await (const result of tool.call(parseResult.data, this.context)) {
         if (this.context.abortController.signal.aborted) {
+          hooks.onAbort("User interrupted");
           entry.durationMs = Date.now() - startTime;
           entry.results.push(
             createUserMessage([
@@ -243,7 +247,7 @@ export class ToolExecutor {
         }
 
         if (result.type === "progress") {
-          // Could emit progress events here
+          hooks.onToolProgress(block.name, result.content);
           continue;
         }
 
@@ -258,11 +262,14 @@ export class ToolExecutor {
         // Emit events based on tool type
         this.emitToolEvents(block.name, parseResult.data as Record<string, unknown>);
 
+        // Log tool completion
+        entry.durationMs = Date.now() - startTime;
+        hooks.onToolComplete(block.name, result.data, entry.durationMs);
+
         // Result
         const content = result.resultForAssistant ||
           tool.renderResultForAssistant(result.data);
 
-        entry.durationMs = Date.now() - startTime;
         entry.results.push(
           createUserMessage([
             {
@@ -277,15 +284,15 @@ export class ToolExecutor {
         );
       }
     } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      hooks.onToolError(block.name, errorObj);
       entry.durationMs = Date.now() - startTime;
       entry.results.push(
         createUserMessage([
           {
             type: "tool_result",
             tool_use_id: block.id,
-            content: `Error: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
+            content: `Error: ${errorObj.message}`,
             is_error: true,
             durationMs: entry.durationMs,
           },
