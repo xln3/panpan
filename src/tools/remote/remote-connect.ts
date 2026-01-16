@@ -16,6 +16,9 @@ const inputSchema = z.object({
   key_path: z.string().optional().describe(
     "Path to SSH private key (for key-based auth)",
   ),
+  password: z.string().optional().describe(
+    "SSH password (for password-based auth). Note: sshpass must be installed.",
+  ),
   connection_id: z.string().optional().describe(
     "Custom connection ID (default: username@hostname:port)",
   ),
@@ -59,6 +62,7 @@ export const RemoteConnectTool: Tool<typeof inputSchema, ConnectOutput> = {
         username: input.username,
         authMethod: input.auth_method,
         keyPath: input.key_path,
+        password: input.password,
       });
 
       const status = connectionManager.getStatus(connectionId);

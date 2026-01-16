@@ -56,7 +56,7 @@ export async function bootstrapDaemon(
     const sshBase = buildSSHCommand(host, sshTimeout);
 
     // 1. Check if Deno is installed
-    const denoCheck = await executeSSH(sshBase, getDenoCheckCommand());
+    const denoCheck = await executeSSH(sshBase, getDenoCheckCommand(), host);
     const denoNotFound = denoCheck.stdout.includes("DENO_NOT_FOUND");
 
     if (denoNotFound) {
@@ -68,7 +68,11 @@ export async function bootstrapDaemon(
       }
 
       // Install Deno
-      const installResult = await executeSSH(sshBase, getDenoInstallCommand());
+      const installResult = await executeSSH(
+        sshBase,
+        getDenoInstallCommand(),
+        host,
+      );
       if (installResult.exitCode !== 0) {
         return {
           success: false,
@@ -93,7 +97,7 @@ export async function bootstrapDaemon(
       `&& cat /tmp/panpan-daemon.log | grep DAEMON_STARTED || cat /tmp/panpan-daemon.log`,
     ].join(" ");
 
-    const startResult = await executeSSH(sshBase, startCmd);
+    const startResult = await executeSSH(sshBase, startCmd, host);
     if (startResult.exitCode !== 0) {
       return {
         success: false,
@@ -146,48 +150,101 @@ function buildSSHCommand(host: RemoteHost, timeout: number): string[] {
     "-o",
     "StrictHostKeyChecking=accept-new",
     "-o",
-    "BatchMode=yes",
-    "-o",
     `ConnectTimeout=${timeout}`,
     "-p",
     String(host.port),
   ];
 
   if (host.authMethod === "key" && host.keyPath) {
-    // Expand ~ to home directory
+    // Key-based authentication - use BatchMode
+    args.unshift("-o", "BatchMode=yes");
     const keyPath = host.keyPath.replace(/^~/, Deno.env.get("HOME") || "");
     args.push("-i", keyPath);
+  } else if (host.authMethod === "agent") {
+    // SSH agent - use BatchMode
+    args.unshift("-o", "BatchMode=yes");
   }
+  // For password auth, we don't use BatchMode - SSH_ASKPASS will be used
 
   args.push(`${host.username}@${host.hostname}`);
-
   return ["ssh", ...args];
 }
 
 /**
+ * Create a temporary askpass script that echoes the password
+ * Returns the path to the script (caller must clean up)
+ */
+async function createAskpassScript(password: string): Promise<string> {
+  const scriptPath = await Deno.makeTempFile({
+    prefix: "askpass_",
+    suffix: ".sh",
+  });
+  const scriptContent = `#!/bin/sh\necho '${
+    password.replace(/'/g, "'\"'\"'")
+  }'`;
+  await Deno.writeTextFile(scriptPath, scriptContent);
+  await Deno.chmod(scriptPath, 0o700);
+  return scriptPath;
+}
+
+/**
  * Execute command over SSH
+ * For password auth, uses SSH_ASKPASS mechanism
  */
 async function executeSSH(
   sshBase: string[],
   command: string,
+  host?: RemoteHost,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const cmd = new Deno.Command(sshBase[0], {
-    args: [...sshBase.slice(1), command],
-    stdout: "piped",
-    stderr: "piped",
-  });
+  let askpassScript: string | undefined;
+  let env: Record<string, string> | undefined;
 
-  const output = await cmd.output();
+  // For password authentication, set up SSH_ASKPASS
+  if (host?.authMethod === "password" && host.password) {
+    askpassScript = await createAskpassScript(host.password);
+    env = {
+      ...Deno.env.toObject(),
+      SSH_ASKPASS: askpassScript,
+      SSH_ASKPASS_REQUIRE: "force", // Force use of askpass even with tty
+      DISPLAY: Deno.env.get("DISPLAY") || ":0", // Required for SSH_ASKPASS
+    };
+  }
 
-  return {
-    stdout: new TextDecoder().decode(output.stdout),
-    stderr: new TextDecoder().decode(output.stderr),
-    exitCode: output.code,
-  };
+  try {
+    // Use setsid to detach from terminal so SSH_ASKPASS is used
+    const cmdArgs = host?.authMethod === "password" && host.password
+      ? ["setsid", "-w", ...sshBase, command]
+      : [...sshBase, command];
+
+    const cmd = new Deno.Command(cmdArgs[0], {
+      args: cmdArgs.slice(1),
+      stdout: "piped",
+      stderr: "piped",
+      env,
+    });
+
+    const output = await cmd.output();
+
+    return {
+      stdout: new TextDecoder().decode(output.stdout),
+      stderr: new TextDecoder().decode(output.stderr),
+      exitCode: output.code,
+    };
+  } finally {
+    // Clean up askpass script
+    if (askpassScript) {
+      try {
+        await Deno.remove(askpassScript);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  }
 }
 
 /**
  * Upload file content to remote host via SSH
+ * For password auth, uses SSH_ASKPASS mechanism
  */
 async function uploadFile(
   host: RemoteHost,
@@ -197,22 +254,53 @@ async function uploadFile(
 ): Promise<void> {
   const sshBase = buildSSHCommand(host, timeout);
 
-  const cmd = new Deno.Command(sshBase[0], {
-    args: [...sshBase.slice(1), `cat > ${remotePath}`],
-    stdin: "piped",
-    stdout: "null",
-    stderr: "piped",
-  });
+  let askpassScript: string | undefined;
+  let env: Record<string, string> | undefined;
 
-  const process = cmd.spawn();
-  const writer = process.stdin.getWriter();
-  await writer.write(new TextEncoder().encode(content));
-  await writer.close();
+  // For password authentication, set up SSH_ASKPASS
+  if (host.authMethod === "password" && host.password) {
+    askpassScript = await createAskpassScript(host.password);
+    env = {
+      ...Deno.env.toObject(),
+      SSH_ASKPASS: askpassScript,
+      SSH_ASKPASS_REQUIRE: "force",
+      DISPLAY: Deno.env.get("DISPLAY") || ":0",
+    };
+  }
 
-  const output = await process.output();
-  if (output.code !== 0) {
-    const stderr = new TextDecoder().decode(output.stderr);
-    throw new Error(`Failed to upload file: ${stderr}`);
+  try {
+    // Use setsid for password auth to ensure SSH_ASKPASS is used
+    const cmdArgs = host.authMethod === "password" && host.password
+      ? ["setsid", "-w", ...sshBase, `cat > ${remotePath}`]
+      : [...sshBase, `cat > ${remotePath}`];
+
+    const cmd = new Deno.Command(cmdArgs[0], {
+      args: cmdArgs.slice(1),
+      stdin: "piped",
+      stdout: "null",
+      stderr: "piped",
+      env,
+    });
+
+    const process = cmd.spawn();
+    const writer = process.stdin.getWriter();
+    await writer.write(new TextEncoder().encode(content));
+    await writer.close();
+
+    const output = await process.output();
+    if (output.code !== 0) {
+      const stderr = new TextDecoder().decode(output.stderr);
+      throw new Error(`Failed to upload file: ${stderr}`);
+    }
+  } finally {
+    // Clean up askpass script
+    if (askpassScript) {
+      try {
+        await Deno.remove(askpassScript);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
   }
 }
 
@@ -225,5 +313,5 @@ export async function killRemoteDaemon(
   sshTimeout = 10,
 ): Promise<void> {
   const sshBase = buildSSHCommand(host, sshTimeout);
-  await executeSSH(sshBase, `kill ${pid} 2>/dev/null || true`);
+  await executeSSH(sshBase, `kill ${pid} 2>/dev/null || true`, host);
 }

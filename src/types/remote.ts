@@ -19,6 +19,8 @@ export interface RemoteHost {
   authMethod: "key" | "password" | "agent";
   /** Path to private key file (for key-based auth) */
   keyPath?: string;
+  /** Password for authentication (for password-based auth) */
+  password?: string;
   /** Host key fingerprint for verification */
   fingerprint?: string;
 }

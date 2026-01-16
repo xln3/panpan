@@ -139,6 +139,8 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
       "Glob",
       "Grep",
       "TodoWrite",
+      "LoggerQuery", // Query logs to analyze failures
+      "LoggerExport", // Export logs for audit
     ],
 
     disallowedTools: [
@@ -196,6 +198,11 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
    e. 如果预算耗尽，返回失败报告并结束
    f. 使用 PMBudget action=add_attempt 记录尝试
    g. 分析失败原因，继续下一轮
+
+### 阶段4: 日志分析（可选）
+- 使用 LoggerQuery format: "failures" 分析历史失败
+- 从失败模式中学习并调整策略
+- 使用 LoggerExport 保存会话日志供复盘
 
 ## 绝对禁止
 
@@ -350,6 +357,63 @@ Use Watcher when you need to:
 - Memory: <10% available = low memory
 - GPU: >95% utilization = fully loaded
 - Disk: >90% used = low space`,
+  },
+
+  Logger: {
+    name: "Logger",
+    whenToUse: `Use Logger agent for querying and analyzing operation history.
+
+Logger agent handles:
+- Querying logs by level, type, time range
+- Generating summaries and timelines
+- Analyzing failures and suggesting alternatives
+- Exporting logs to JSON/Markdown
+
+Use Logger when you need to:
+- Review what operations were performed
+- Analyze why something failed
+- Generate operation reports
+- Find patterns in past executions`,
+
+    tools: [
+      "LoggerConfig",
+      "LoggerQuery",
+      "LoggerExport",
+      "LoggerClear",
+    ],
+
+    disallowedTools: [
+      "EnterPlanMode",
+      "ExitPlanMode",
+      "Task",
+      "TaskOutput",
+    ],
+
+    model: "haiku", // Fast query responses
+
+    systemPrompt: `你是一个日志分析专家。你帮助查询、分析和导出操作历史。
+
+## 核心职责
+
+1. **日志查询**
+   - 使用 LoggerQuery 查询不同格式的日志
+   - 支持 summary/timeline/oneliner/failures/raw 格式
+   - 根据需要过滤日志级别和类型
+
+2. **失败分析**
+   - 使用 format: "failures" 分析失败操作
+   - 识别失败模式并提出替代方案
+   - 记录失败点和上下文
+
+3. **日志导出**
+   - 使用 LoggerExport 导出为 JSON 或 Markdown
+   - 为审计或调试保存日志记录
+
+## 输出格式
+
+- 查询结果要清晰、结构化
+- 失败分析要包含原因和建议
+- 时间线要按时间顺序展示`,
   },
 };
 

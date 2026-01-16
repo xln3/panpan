@@ -5,6 +5,34 @@
 import { z } from "zod";
 import type { Tool, ToolContext, ToolYield } from "../types/tool.ts";
 import { basename, isAbsolute, join } from "@std/path";
+import { diagnoseNetwork } from "../utils/diagnostics/network-diagnostics.ts";
+
+/**
+ * Network error patterns that trigger diagnostics
+ */
+const NETWORK_ERROR_PATTERNS = [
+  "Network is unreachable",
+  "Connection timed out",
+  "Connection refused",
+  "Name or service not known",
+  "Could not resolve host",
+  "No route to host",
+  "Connection reset by peer",
+  "SSL certificate problem",
+  "ETIMEDOUT",
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "ECONNRESET",
+];
+
+/**
+ * Extract URL from command or error output
+ */
+function extractUrl(text: string): string | undefined {
+  const urlPattern = /https?:\/\/[^\s'"]+/;
+  const match = text.match(urlPattern);
+  return match?.[0];
+}
 
 /**
  * Check if a directory is a Python project (contains setup.py, pyproject.toml, or setup.cfg)
@@ -319,10 +347,78 @@ export const BashTool: Tool<typeof inputSchema, Output> = {
         timedOut,
       };
 
+      // Check for network errors and provide diagnostics
+      let networkDiagnosticInfo = "";
+      if (output.exitCode !== 0) {
+        const combinedOutput = stdout + stderr;
+        const hasNetworkError = NETWORK_ERROR_PATTERNS.some((pattern) =>
+          combinedOutput.includes(pattern)
+        );
+
+        if (hasNetworkError) {
+          try {
+            // Extract URL from command or output for targeted diagnosis
+            const targetUrl = extractUrl(input.command) ||
+              extractUrl(combinedOutput);
+            const diagnosis = await diagnoseNetwork(targetUrl);
+
+            const diagParts: string[] = [
+              "\n\n📡 NETWORK DIAGNOSTIC:",
+              `- Network reachable: ${
+                diagnosis.networkReachable ? "✅ Yes" : "❌ No"
+              }`,
+              `- DNS working: ${diagnosis.dnsWorking ? "✅ Yes" : "❌ No"}`,
+              `- Proxy configured: ${
+                diagnosis.proxyConfigured
+                  ? `✅ Yes (${diagnosis.proxyUrl})`
+                  : "❌ No"
+              }`,
+            ];
+
+            if (diagnosis.availableMirrors.length > 0) {
+              diagParts.push(
+                `- Available mirrors: ${diagnosis.availableMirrors.join(", ")}`,
+              );
+            }
+
+            if (!diagnosis.sslValid) {
+              diagParts.push("- SSL issue detected");
+            }
+
+            // Provide actionable suggestions
+            diagParts.push("\n💡 SUGGESTIONS:");
+            if (!diagnosis.networkReachable) {
+              diagParts.push("- Check your internet connection");
+              diagParts.push(
+                "- If behind a proxy, set HTTP_PROXY/HTTPS_PROXY environment variables",
+              );
+            } else if (!diagnosis.dnsWorking) {
+              diagParts.push("- DNS resolution failed for the target host");
+              diagParts.push(
+                "- Try using a different DNS server (e.g., 8.8.8.8)",
+              );
+            }
+
+            if (diagnosis.availableMirrors.length > 0) {
+              diagParts.push(
+                `- Try using a mirror: ${diagnosis.availableMirrors[0]}`,
+              );
+            }
+
+            networkDiagnosticInfo = diagParts.join("\n");
+          } catch {
+            // Silently ignore diagnosis errors
+          }
+        }
+      }
+
       // Include venv warning in result if present
       let resultText = this.renderResultForAssistant(output);
       if (venvWarning) {
         resultText = `WARNING: ${venvWarning}\n\n${resultText}`;
+      }
+      if (networkDiagnosticInfo) {
+        resultText += networkDiagnosticInfo;
       }
 
       yield {
