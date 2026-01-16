@@ -42,6 +42,14 @@ export {
   systemReminderService,
 } from "./system-reminder.ts";
 
+// Email notification service
+export {
+  emailService,
+  initEmailService,
+  loadEmailConfig,
+  shutdownEmailService,
+} from "./email/mod.ts";
+
 // === Service initialization config ===
 
 export interface ServicesConfig {
@@ -58,12 +66,15 @@ import { loggerService } from "./logger/mod.ts";
 import { connectionManager } from "./remote/mod.ts";
 import { monitorRegistry } from "./watcher/mod.ts";
 import { systemReminderService } from "./system-reminder.ts";
+import { initEmailService, shutdownEmailService } from "./email/mod.ts";
 
 /**
  * Initialize all services with optional configuration.
  * Should be called at application startup.
  */
-export function initializeServices(config: ServicesConfig = {}): void {
+export async function initializeServices(
+  config: ServicesConfig = {},
+): Promise<void> {
   // 1. Initialize Logger first (other services may depend on it)
   loggerService.initialize({
     defaultLevel: config.logLevel || "tool",
@@ -75,6 +86,9 @@ export function initializeServices(config: ServicesConfig = {}): void {
 
   // 3. Reset system reminder service
   systemReminderService.resetSession();
+
+  // 4. Initialize email service (if configured)
+  await initEmailService();
 }
 
 /**
@@ -88,6 +102,9 @@ export async function cleanupServices(): Promise<void> {
   // 2. Clear monitor registry (monitors are stateless samplers, not running services)
   monitorRegistry.clear();
 
-  // 3. Flush and shutdown logger
+  // 3. Shutdown email service
+  await shutdownEmailService();
+
+  // 4. Flush and shutdown logger
   await loggerService.shutdown();
 }

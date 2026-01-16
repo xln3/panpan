@@ -24,10 +24,10 @@ function resetServices(): void {
 // initializeServices tests
 // =============================================================================
 
-Deno.test("initializeServices - initializes logger with default level", () => {
+Deno.test("initializeServices - initializes logger with default level", async () => {
   resetServices();
 
-  initializeServices();
+  await initializeServices();
 
   // Default level is "tool"
   assertEquals(loggerService.getLevel(), "tool");
@@ -35,23 +35,23 @@ Deno.test("initializeServices - initializes logger with default level", () => {
   resetServices();
 });
 
-Deno.test("initializeServices - initializes logger with custom level", () => {
+Deno.test("initializeServices - initializes logger with custom level", async () => {
   resetServices();
 
-  initializeServices({ logLevel: "full" });
+  await initializeServices({ logLevel: "full" });
 
   assertEquals(loggerService.getLevel(), "full");
 
   resetServices();
 });
 
-Deno.test("initializeServices - registers builtin monitors", () => {
+Deno.test("initializeServices - registers builtin monitors", async () => {
   resetServices();
 
   // Before init, registry should be empty
   assertEquals(monitorRegistry.size, 0);
 
-  initializeServices();
+  await initializeServices();
 
   // After init, should have builtin monitors registered
   assertEquals(monitorRegistry.size > 0, true);
@@ -64,14 +64,14 @@ Deno.test("initializeServices - registers builtin monitors", () => {
   resetServices();
 });
 
-Deno.test("initializeServices - is idempotent for logger", () => {
+Deno.test("initializeServices - is idempotent for logger", async () => {
   resetServices();
 
-  initializeServices({ logLevel: "summary" });
+  await initializeServices({ logLevel: "summary" });
   assertEquals(loggerService.getLevel(), "summary");
 
   // Second call should not change level (logger is already initialized)
-  initializeServices({ logLevel: "full" });
+  await initializeServices({ logLevel: "full" });
   assertEquals(loggerService.getLevel(), "summary");
 
   resetServices();
@@ -83,7 +83,7 @@ Deno.test("initializeServices - is idempotent for logger", () => {
 
 Deno.test("cleanupServices - clears monitor registry", async () => {
   resetServices();
-  initializeServices();
+  await initializeServices();
 
   assertEquals(monitorRegistry.size > 0, true);
 
@@ -96,7 +96,7 @@ Deno.test("cleanupServices - clears monitor registry", async () => {
 
 Deno.test("cleanupServices - can be called multiple times safely", async () => {
   resetServices();
-  initializeServices();
+  await initializeServices();
 
   await cleanupServices();
   await cleanupServices(); // Should not throw
@@ -114,7 +114,7 @@ Deno.test("services lifecycle - init then cleanup works correctly", async () => 
   resetServices();
 
   // Initialize
-  initializeServices({ logLevel: "llm" });
+  await initializeServices({ logLevel: "llm" });
   assertEquals(loggerService.getLevel(), "llm");
   assertEquals(monitorRegistry.size > 0, true);
 

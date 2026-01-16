@@ -14,3 +14,4 @@ export * from "./logger.ts";
 export * from "./remote.ts";
 export * from "./watcher.ts";
 export * from "./pm.ts";
+export * from "./email.ts";

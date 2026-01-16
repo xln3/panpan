@@ -48,6 +48,8 @@ import {
   WatcherListTool,
   WatcherStatusTool,
 } from "./watcher/mod.ts";
+// Email notification tools
+import { EmailAskTool, EmailNotifyTool } from "./email/mod.ts";
 
 /**
  * Get all available tools
@@ -95,6 +97,9 @@ export function getAllTools(): Tool[] {
     WatcherStatusTool as unknown as Tool,
     WatcherListTool as unknown as Tool,
     WatcherAlertTool as unknown as Tool,
+    // Email notification tools
+    EmailNotifyTool as unknown as Tool,
+    EmailAskTool as unknown as Tool,
   ];
 }
 
@@ -153,3 +158,5 @@ export {
   WatcherListTool,
   WatcherStatusTool,
 } from "./watcher/mod.ts";
+// Email notification tools
+export { EmailAskTool, EmailNotifyTool } from "./email/mod.ts";
