@@ -15,7 +15,10 @@ import {
   resolve,
 } from "@std/path";
 import type { IndexDatabase, IndexResult } from "./database.ts";
-import { createGitignoreParser, type GitignoreParser } from "./gitignore-parser.ts";
+import {
+  createGitignoreParser,
+  type GitignoreParser,
+} from "./gitignore-parser.ts";
 
 /** File entry stored in the index */
 export interface FileEntry {

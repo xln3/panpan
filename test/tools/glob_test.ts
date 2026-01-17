@@ -21,6 +21,7 @@ interface GlobOutput {
   numFiles: number;
   durationMs: number;
   truncated: boolean;
+  usedIndex: boolean;
 }
 
 async function runGlob(
@@ -30,12 +31,16 @@ async function runGlob(
 ): Promise<GlobOutput> {
   const context = createMockToolContext({ cwd });
   const results = await collectGenerator(
-    GlobTool.call({ pattern, path }, context),
+    GlobTool.call({ pattern, path, use_index: false }, context),
   );
   const result = results[0] as ToolYield<GlobOutput>;
-  return result.type === "result"
-    ? result.data
-    : { filenames: [], numFiles: 0, durationMs: 0, truncated: false };
+  return result.type === "result" ? result.data : {
+    filenames: [],
+    numFiles: 0,
+    durationMs: 0,
+    truncated: false,
+    usedIndex: false,
+  };
 }
 
 // =============================================================================
@@ -133,14 +138,17 @@ Deno.test("GlobTool - handles absolute path", async () => {
 
 Deno.test("GlobTool - validateInput passes when path not provided", async () => {
   const context = createMockToolContext();
-  const result = await GlobTool.validateInput!({ pattern: "*.ts" }, context);
+  const result = await GlobTool.validateInput!({
+    pattern: "*.ts",
+    use_index: false,
+  }, context);
   assertEquals(result.result, true);
 });
 
 Deno.test("GlobTool - validateInput fails for non-existent path", async () => {
   const context = createMockToolContext();
   const result = await GlobTool.validateInput!(
-    { pattern: "*.ts", path: "/non/existent/path" },
+    { pattern: "*.ts", path: "/non/existent/path", use_index: false },
     context,
   );
   assertEquals(result.result, false);
@@ -155,7 +163,7 @@ Deno.test("GlobTool - validateInput fails for file path (not directory)", async 
 
     const context = createMockToolContext({ cwd: dir });
     const result = await GlobTool.validateInput!(
-      { pattern: "*.ts", path: "test.txt" },
+      { pattern: "*.ts", path: "test.txt", use_index: false },
       context,
     );
 
@@ -238,7 +246,7 @@ Deno.test("GlobTool - respects abort signal", async () => {
     controller.abort();
 
     const results = await collectGenerator(
-      GlobTool.call({ pattern: "*.txt" }, context),
+      GlobTool.call({ pattern: "*.txt", use_index: false }, context),
     );
 
     // Should complete quickly with partial or no results
@@ -268,6 +276,7 @@ Deno.test("GlobTool - renders result for assistant", () => {
     numFiles: 2,
     durationMs: 10,
     truncated: false,
+    usedIndex: false,
   };
 
   const result = GlobTool.renderResultForAssistant(output);
@@ -282,6 +291,7 @@ Deno.test("GlobTool - renders truncation message", () => {
     numFiles: 100,
     durationMs: 10,
     truncated: true,
+    usedIndex: false,
   };
 
   const result = GlobTool.renderResultForAssistant(output);
@@ -295,6 +305,7 @@ Deno.test("GlobTool - renders empty result message", () => {
     numFiles: 0,
     durationMs: 10,
     truncated: false,
+    usedIndex: false,
   };
 
   const result = GlobTool.renderResultForAssistant(output);

@@ -10,15 +10,14 @@
  */
 
 export function fibonacci(n: number): number {
-  // Bug 1: Wrong base case for n=0 (should return 0, not 1)
-  if (n === 0) return 1;
+  // Base case for n=0
+  if (n === 0) return 0;
 
-  // Bug 2: Wrong base case for n=1 (should return 1, not 0)
-  if (n === 1) return 0;
+  // Base case for n=1
+  if (n === 1) return 1;
 
-  // Bug 3: Wrong recursive formula (missing function calls)
-  // Should be: fibonacci(n - 1) + fibonacci(n - 2)
-  return (n - 1) + (n - 2);
+  // Recursive formula
+  return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
 /**

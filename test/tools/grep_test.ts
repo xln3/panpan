@@ -26,6 +26,7 @@ interface GrepOutput {
   }>;
   numFiles: number;
   truncated: boolean;
+  usedIndex: boolean;
 }
 
 async function runGrep(
@@ -45,6 +46,7 @@ async function runGrep(
   const fullInput = {
     output_mode: "files_with_matches" as const,
     "-n": true,
+    use_index: false, // Disable index for unit tests
     ...input,
   };
   const results = await collectGenerator(GrepTool.call(fullInput, context));
@@ -54,6 +56,7 @@ async function runGrep(
     matches: [],
     numFiles: 0,
     truncated: false,
+    usedIndex: false,
   };
 }
 
@@ -316,6 +319,7 @@ Deno.test("GrepTool - respects abort signal", async () => {
         pattern: "pattern",
         output_mode: "files_with_matches",
         "-n": true,
+        use_index: false,
       }, context),
     );
 
@@ -345,6 +349,7 @@ Deno.test("GrepTool - renders files_with_matches result", () => {
     matches: [{ file: "/path/file1.ts" }, { file: "/path/file2.ts" }],
     numFiles: 2,
     truncated: false,
+    usedIndex: false,
   };
 
   const result = GrepTool.renderResultForAssistant(output);
@@ -359,6 +364,7 @@ Deno.test("GrepTool - renders count result", () => {
     matches: [{ file: "/path/file.ts", count: 5 }],
     numFiles: 1,
     truncated: false,
+    usedIndex: false,
   };
 
   const result = GrepTool.renderResultForAssistant(output);
@@ -372,6 +378,7 @@ Deno.test("GrepTool - renders content result", () => {
     matches: [{ file: "/path/file.ts", line: 10, content: "const x = 1;" }],
     numFiles: 1,
     truncated: false,
+    usedIndex: false,
   };
 
   const result = GrepTool.renderResultForAssistant(output);
@@ -386,6 +393,7 @@ Deno.test("GrepTool - renders empty result message", () => {
     matches: [],
     numFiles: 0,
     truncated: false,
+    usedIndex: false,
   };
 
   const result = GrepTool.renderResultForAssistant(output);
@@ -399,6 +407,7 @@ Deno.test("GrepTool - renders truncation message", () => {
     matches: [{ file: "/path/file.ts" }],
     numFiles: 100,
     truncated: true,
+    usedIndex: false,
   };
 
   const result = GrepTool.renderResultForAssistant(output);
