@@ -50,6 +50,8 @@ import {
 } from "./watcher/mod.ts";
 // Email notification tools
 import { EmailAskTool, EmailNotifyTool } from "./email/mod.ts";
+// Search index tools
+import { SemanticSearchTool } from "./semantic-search.ts";
 
 /**
  * Get all available tools
@@ -100,6 +102,8 @@ export function getAllTools(): Tool[] {
     // Email notification tools
     EmailNotifyTool as unknown as Tool,
     EmailAskTool as unknown as Tool,
+    // Search index tools
+    SemanticSearchTool as unknown as Tool,
   ];
 }
 
@@ -160,3 +164,5 @@ export {
 } from "./watcher/mod.ts";
 // Email notification tools
 export { EmailAskTool, EmailNotifyTool } from "./email/mod.ts";
+// Search index tools
+export { SemanticSearchTool } from "./semantic-search.ts";

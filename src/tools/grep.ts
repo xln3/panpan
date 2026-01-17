@@ -1,11 +1,15 @@
 /**
  * Grep tool - content search using regex
+ *
+ * Supports optional FTS5 index acceleration for faster searching.
+ * FTS5 is used for simple text searches; regex patterns fall back to scanning.
  */
 
 import { z } from "zod";
 import { walk } from "@std/fs";
 import { globToRegExp, isAbsolute, relative, resolve } from "@std/path";
 import type { Tool, ToolContext, ToolYield } from "../types/tool.ts";
+import { getSearchIndexService } from "../services/search-index/mod.ts";
 
 const inputSchema = z.object({
   pattern: z.string().describe("The regular expression pattern to search for"),
@@ -24,6 +28,9 @@ const inputSchema = z.object({
   "-C": z.number().optional().describe(
     "Number of lines to show before and after each match",
   ),
+  use_index: z.boolean().optional().default(true).describe(
+    "Use FTS5 index for faster searching when available (default: true). Falls back to regex for complex patterns.",
+  ),
 });
 
 type Input = z.infer<typeof inputSchema>;
@@ -38,6 +45,7 @@ interface Output {
   }>;
   numFiles: number;
   truncated: boolean;
+  usedIndex: boolean;
 }
 
 const MAX_MATCHES = 100;
@@ -60,20 +68,24 @@ export const GrepTool: Tool<typeof inputSchema, Output> = {
       : context.cwd;
 
     const flags = input["-i"] ? "gi" : "g";
-    const regex = new RegExp(input.pattern, flags);
 
-    const globPattern = input.glob
-      ? globToRegExp(input.glob, { extended: true, globstar: true })
-      : null;
+    // Try to use FTS5 index if available and appropriate
+    const indexService = getSearchIndexService();
+    const canUseIndex = input.use_index !== false &&
+      indexService?.isInitialized() &&
+      !input.glob && // FTS5 doesn't support glob filtering directly
+      isSimplePattern(input.pattern); // FTS5 works best with simple patterns
 
     const matches: Output["matches"] = [];
     let truncated = false;
+    let usedIndex = false;
 
-    // Check if searchPath is a file or directory
+    // Check if searchPath is a file
     const stat = await Deno.stat(searchPath);
 
     if (stat.isFile) {
-      // Search single file
+      // Single file - always use regex
+      const regex = new RegExp(input.pattern, flags);
       const results = await searchFile(
         searchPath,
         regex,
@@ -81,8 +93,57 @@ export const GrepTool: Tool<typeof inputSchema, Output> = {
         input["-C"],
       );
       matches.push(...results);
-    } else {
-      // Walk directory
+    } else if (canUseIndex && indexService) {
+      // Try FTS5 for directory search
+      try {
+        const mode = input.output_mode ?? "files_with_matches";
+        const ftsResults = await indexService.search(input.pattern, {
+          limit: MAX_MATCHES,
+          filesOnly: mode === "files_with_matches",
+        });
+
+        if (mode === "files_with_matches") {
+          // Just return file paths
+          for (const result of ftsResults) {
+            matches.push({ file: result.filePath });
+          }
+        } else {
+          // For content/count mode, we need to re-scan the files with regex
+          // FTS5 gives us candidate files, regex gives us exact matches
+          const regex = new RegExp(input.pattern, flags);
+          const candidateFiles = new Set(ftsResults.map((r) => r.filePath));
+
+          for (const filePath of candidateFiles) {
+            if (matches.length >= MAX_MATCHES) break;
+            try {
+              const results = await searchFile(
+                filePath,
+                regex,
+                mode,
+                input["-C"],
+              );
+              matches.push(...results);
+            } catch {
+              // Skip files we can't read
+            }
+          }
+        }
+
+        truncated = matches.length >= MAX_MATCHES;
+        usedIndex = true;
+      } catch {
+        // Fall back to filesystem scan on index error
+        usedIndex = false;
+      }
+    }
+
+    // Fall back to filesystem walk if index not used
+    if (!usedIndex && stat.isDirectory) {
+      const regex = new RegExp(input.pattern, flags);
+      const globPattern = input.glob
+        ? globToRegExp(input.glob, { extended: true, globstar: true })
+        : null;
+
       for await (const entry of walk(searchPath, { includeDirs: false })) {
         if (context.abortController.signal.aborted) break;
 
@@ -124,6 +185,7 @@ export const GrepTool: Tool<typeof inputSchema, Output> = {
       matches,
       numFiles: new Set(matches.map((m) => m.file)).size,
       truncated,
+      usedIndex,
     };
 
     yield {
@@ -227,6 +289,23 @@ async function searchFile(
   }
 
   return results;
+}
+
+/**
+ * Check if a pattern is simple enough to use FTS5.
+ * FTS5 works best with word-based patterns, not complex regex.
+ */
+function isSimplePattern(pattern: string): boolean {
+  // Regex metacharacters that indicate complex patterns
+  const complexChars = /[\\^$.*+?{}[\]|()]/;
+
+  // If pattern has regex metacharacters, it's not simple
+  if (complexChars.test(pattern)) {
+    return false;
+  }
+
+  // Pattern is simple - just words/phrases
+  return true;
 }
 
 function isBinaryPath(path: string): boolean {

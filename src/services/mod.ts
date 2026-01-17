@@ -50,6 +50,27 @@ export {
   shutdownEmailService,
 } from "./email/mod.ts";
 
+// Search index service
+export {
+  getSearchIndexService,
+  initSearchIndex,
+  SearchIndexService,
+  searchIndexService,
+  shutdownSearchIndex,
+} from "./search-index/mod.ts";
+
+export type {
+  ContentMatch,
+  ContentSearchOptions,
+  FileEntry,
+  GlobQueryOptions,
+  IndexConfig,
+  IndexResult,
+  IndexStats,
+  VectorMatch,
+  VectorSearchOptions,
+} from "./search-index/mod.ts";
+
 // === Service initialization config ===
 
 export interface ServicesConfig {

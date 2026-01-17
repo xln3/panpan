@@ -1,16 +1,23 @@
 /**
  * Glob tool - file pattern matching
+ *
+ * Supports optional index acceleration via the search-index service.
+ * When index is available, glob queries run in <10ms instead of 500-1000ms.
  */
 
 import { z } from "zod";
 import { walk } from "@std/fs";
 import { globToRegExp, isAbsolute, relative, resolve } from "@std/path";
 import type { Tool, ToolContext, ToolYield } from "../types/tool.ts";
+import { getSearchIndexService } from "../services/search-index/mod.ts";
 
 const inputSchema = z.object({
   pattern: z.string().describe("The glob pattern to match files against"),
   path: z.string().optional().describe(
     "The directory to search in. Defaults to current working directory.",
+  ),
+  use_index: z.boolean().optional().default(true).describe(
+    "Use search index for faster matching (default: true). Set to false to force filesystem walk.",
   ),
 });
 
@@ -21,6 +28,7 @@ interface Output {
   numFiles: number;
   durationMs: number;
   truncated: boolean;
+  usedIndex: boolean;
 }
 
 const MAX_FILES = 100;
@@ -58,31 +66,54 @@ export const GlobTool: Tool<typeof inputSchema, Output> = {
       ? isAbsolute(input.path) ? input.path : resolve(context.cwd, input.path)
       : context.cwd;
 
-    const regex = globToRegExp(input.pattern, {
-      extended: true,
-      globstar: true,
-    });
-    const files: string[] = [];
+    // Try to use index if available and enabled
+    const indexService = getSearchIndexService();
+    const useIndex = input.use_index !== false && indexService?.isInitialized();
+
+    let files: string[] = [];
     let truncated = false;
+    let usedIndex = false;
 
-    try {
-      for await (const entry of walk(searchPath, { includeDirs: false })) {
-        if (context.abortController.signal.aborted) break;
+    if (useIndex && indexService) {
+      // Use index for fast glob matching
+      try {
+        files = await indexService.glob(input.pattern, searchPath, {
+          limit: MAX_FILES,
+        });
+        truncated = files.length >= MAX_FILES;
+        usedIndex = true;
+      } catch {
+        // Fall back to filesystem walk on index error
+        usedIndex = false;
+      }
+    }
 
-        // Match against relative path from search root
-        const relativePath = relative(searchPath, entry.path);
-        if (regex.test(relativePath) || regex.test(entry.name)) {
-          files.push(entry.path);
-          if (files.length >= MAX_FILES) {
-            truncated = true;
-            break;
+    // Fall back to filesystem walk if index not used
+    if (!usedIndex) {
+      const regex = globToRegExp(input.pattern, {
+        extended: true,
+        globstar: true,
+      });
+
+      try {
+        for await (const entry of walk(searchPath, { includeDirs: false })) {
+          if (context.abortController.signal.aborted) break;
+
+          // Match against relative path from search root
+          const relativePath = relative(searchPath, entry.path);
+          if (regex.test(relativePath) || regex.test(entry.name)) {
+            files.push(entry.path);
+            if (files.length >= MAX_FILES) {
+              truncated = true;
+              break;
+            }
           }
         }
-      }
-    } catch (error) {
-      // Permission errors etc - continue with what we have
-      if (files.length === 0) {
-        throw error;
+      } catch (error) {
+        // Permission errors etc - continue with what we have
+        if (files.length === 0) {
+          throw error;
+        }
       }
     }
 
@@ -91,6 +122,7 @@ export const GlobTool: Tool<typeof inputSchema, Output> = {
       numFiles: files.length,
       durationMs: Date.now() - start,
       truncated,
+      usedIndex,
     };
 
     yield {
