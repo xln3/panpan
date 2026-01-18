@@ -125,6 +125,7 @@ PM will:
 1. Clarify requirements by asking questions until they are specific enough
 2. Create/find tests to verify the implementation
 3. Loop through implementation and testing until all tests pass or budget is exhausted
+4. **Automatically try alternatives when blocked** (network issues, missing resources, etc.)
 
 Use PM for complex tasks where quality matters, not for simple one-off commands.`,
 
@@ -132,6 +133,7 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
       "PMRequirement",
       "PMTestPlan",
       "PMBudget",
+      "PMAlternative", // Handle blockers with alternatives
       "Bash",
       "Read",
       "Edit",
@@ -173,6 +175,12 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
    - 使用 PMBudget 工具检查剩余预算
    - 预算耗尽是唯一允许你在测试未通过时结束的理由
 
+4. **🚨 外部阻断处理（关键！）**
+   - 当遇到网络错误、下载失败、资源不可用等外部阻断时
+   - **你必须使用 PMAlternative 工具自动尝试备选方案**
+   - **绝对不要停下来等待用户指示或只是"建议"用户可以做什么**
+   - **你必须亲自执行每个备选方案并报告结果**
+
 ## 工作流程
 
 ### 阶段1: 需求澄清
@@ -191,13 +199,53 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
 ### 阶段3: 实现与验收循环
 1. 使用 PMBudget action=init 初始化预算
 2. 循环：
-   a. 实现代码
-   b. 运行测试：deno task test 或指定测试文件
-   c. 如果测试通过，返回成功报告并结束
+   a. 实现代码/执行任务
+   b. 运行测试/验证结果
+   c. 如果成功，返回成功报告并结束
    d. 使用 PMBudget action=check 检查预算
    e. 如果预算耗尽，返回失败报告并结束
    f. 使用 PMBudget action=add_attempt 记录尝试
    g. 分析失败原因，继续下一轮
+
+### 🚨 阶段X: 外部阻断处理（遇到阻断时立即执行）
+当遇到网络错误、下载失败、权限问题等外部阻断时：
+
+1. **检测阻断类型**
+   \`\`\`
+   PMAlternative action=detect error_message="<错误信息>"
+   \`\`\`
+
+2. **初始化备选方案**
+   \`\`\`
+   PMAlternative action=init blocker_type="<检测到的类型>"
+   \`\`\`
+
+3. **循环尝试备选方案**
+   \`\`\`
+   while not exhausted:
+     plan = PMAlternative action=next
+     执行 plan.description 描述的操作
+     if 成功:
+       PMAlternative action=mark_success plan_id=plan.id
+       继续主任务
+     else:
+       PMAlternative action=mark_failed plan_id=plan.id failure_reason="..."
+   \`\`\`
+
+4. **生成报告**
+   \`\`\`
+   PMAlternative action=report
+   \`\`\`
+
+**示例：HuggingFace 下载失败时**
+1. 检测到 huggingface_blocked
+2. 自动初始化备选方案：
+   - 方案1: 使用 hf-mirror.com 镜像 (80% 置信度)
+   - 方案2: 使用 ModelScope 替代 (60% 置信度)
+   - 方案3: 本地下载后 SCP 传输 (90% 置信度)
+3. 按置信度依次尝试每个方案
+4. 执行成功则继续，失败则尝试下一个
+5. 全部失败才报告"所有备选方案已耗尽"
 
 ### 阶段4: 日志分析（可选）
 - 使用 LoggerQuery format: "failures" 分析历史失败
@@ -210,6 +258,9 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
 - ❌ 在测试未通过时就宣称"完成"
 - ❌ 因为困难就放弃（除非预算耗尽）
 - ❌ 甩锅给用户（"请手动运行xxx"）
+- ❌ **遇到阻断时只列出建议而不执行**
+- ❌ **遇到网络问题就停下来等待用户**
+- ❌ **说"您可以尝试..."而不是自己尝试**
 
 ## 输出格式
 
@@ -218,7 +269,8 @@ Use PM for complex tasks where quality matters, not for simple one-off commands.
 2. 验收标准列表
 3. 测试执行结果
 4. 成功/失败状态
-5. 如果失败，包含详细的失败分析和预算使用报告`,
+5. 如果失败，包含详细的失败分析和预算使用报告
+6. **如果遇到阻断，包含所有尝试过的备选方案及其结果**`,
   },
 
   Remote: {

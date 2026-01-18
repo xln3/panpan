@@ -12,3 +12,7 @@ export {
   PMBudgetTool,
   resetBudgetTracker,
 } from "./pm-budget.ts";
+export {
+  PMAlternativeTool,
+  resetAlternativeManager,
+} from "./pm-alternative.ts";

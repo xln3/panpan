@@ -25,7 +25,12 @@ import {
 } from "./package-managers/mod.ts";
 import { DatasetDownloadTool } from "./dataset-download.ts";
 // PM SA tools
-import { PMBudgetTool, PMRequirementTool, PMTestPlanTool } from "./pm/mod.ts";
+import {
+  PMAlternativeTool,
+  PMBudgetTool,
+  PMRequirementTool,
+  PMTestPlanTool,
+} from "./pm/mod.ts";
 // Remote SA tools
 import {
   RemoteConnectTool,
@@ -83,6 +88,7 @@ export function getAllTools(): Tool[] {
     PMRequirementTool as unknown as Tool,
     PMTestPlanTool as unknown as Tool,
     PMBudgetTool as unknown as Tool,
+    PMAlternativeTool as unknown as Tool,
     // Remote SA tools
     RemoteConnectTool as unknown as Tool,
     RemoteExecTool as unknown as Tool,
@@ -139,7 +145,12 @@ export {
 // Dataset download tool
 export { DatasetDownloadTool } from "./dataset-download.ts";
 // PM SA tools
-export { PMBudgetTool, PMRequirementTool, PMTestPlanTool } from "./pm/mod.ts";
+export {
+  PMAlternativeTool,
+  PMBudgetTool,
+  PMRequirementTool,
+  PMTestPlanTool,
+} from "./pm/mod.ts";
 // Remote SA tools
 export {
   RemoteConnectTool,

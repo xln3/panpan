@@ -29,3 +29,9 @@ export {
   type BudgetStatus,
   BudgetTracker,
 } from "./budget-tracker.ts";
+
+export {
+  AlternativeManager,
+  alternativeManager,
+  COMMON_ALTERNATIVES,
+} from "./alternative-manager.ts";
